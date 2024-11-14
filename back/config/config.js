@@ -1,17 +1,26 @@
+/* eslint-disable no-console */
+
+// -------------------------------------------------------------------------------------------------
 // External dependencies
+// -------------------------------------------------------------------------------------------------
 const fs = require('fs')
 const ini = require('ini')
 
+// -------------------------------------------------------------------------------------------------
 // Internal dependencies
+// -------------------------------------------------------------------------------------------------
 const { getBackOptions, OPT_USER_CONF, getBackDomain, OPT_DB_PATH } = require('./backOptions')
 const { pathJoin, jsonToString } = require('../utils/utils')
 
+// -------------------------------------------------------------------------------------------------
 // Constants
+// -------------------------------------------------------------------------------------------------
 exports.FORM_PREFIX = 'form'
 exports.CATALOG = 'rudi-catalog'
 exports.STORAGE = 'rudi-storage'
 exports.MANAGER = 'rudi-manager'
 
+// -------------------------------------------------------------------------------------------------
 // Load default conf
 const defaultConfigFile = './prodmanager-conf-default.ini'
 const defaultCustomConfigFile = './prodmanager-conf-custom.ini' // if not set
@@ -19,29 +28,28 @@ const defaultCustomConfigFile = './prodmanager-conf-custom.ini' // if not set
 let defaultConfFileContent
 try {
   defaultConfFileContent = fs.readFileSync(defaultConfigFile, 'utf-8')
-} catch (error) {
+} catch {
   throw new Error(`No default configuration file was found at '${customConfigFile}'`)
 }
 
+// -------------------------------------------------------------------------------------------------
 // Load custom conf
 const customConfigFile = getBackOptions(OPT_USER_CONF, defaultCustomConfigFile)
 let customConfFileContent
 try {
   customConfFileContent = fs.readFileSync(customConfigFile, 'utf-8')
-} catch (error) {
+} catch {
   throw new Error(`No custom configuration file was found at '${customConfigFile}'`)
 }
 
 const customConfig = ini.parse(customConfFileContent)
 const config = ini.parse(defaultConfFileContent)
 
-// eslint-disable-next-line guard-for-in
 for (const section in customConfig) {
   const customParams = customConfig[section]
   if (customParams) {
     if (!config[section]) config[section] = {}
-    for (const param in customParams)
-      if (customParams[param]) config[section][param] = customParams[param]
+    for (const param in customParams) if (customParams[param]) config[section][param] = customParams[param]
   }
 }
 
@@ -70,8 +78,7 @@ exports.getConf = (section, subSection) => {
 // Shortcuts to access popular conf values
 const RUDI_CATALOG_API_ADMIN = config.rudi_api?.admin_api || 'api/admin'
 exports.getCatalogUrl = (...args) => pathJoin(RUDI_CATALOG_URL, ...args)
-exports.getCatalogAdminUrl = (...args) =>
-  pathJoin(RUDI_CATALOG_URL, RUDI_CATALOG_API_ADMIN, ...args)
+exports.getCatalogAdminUrl = (...args) => pathJoin(RUDI_CATALOG_URL, RUDI_CATALOG_API_ADMIN, ...args)
 exports.getCatalogAdminPath = (...args) => pathJoin(RUDI_CATALOG_API_ADMIN, ...args)
 
 exports.getCatalogUrlAndParams = (url, req) => {
@@ -90,11 +97,9 @@ exports.getStorageDwnlUrl = (id) => this.getStorageUrl('download', id)
 
 // const CONSOLE_FORM_URL = removeTrailingSlash(config.rudi_console.console_form_url)
 
-const getDbConf = (subSection) =>
-  config.database?.[subSection] ? `${config.database[subSection]}`.trim() : false
+const getDbConf = (subSection) => (config.database?.[subSection] ? `${config.database[subSection]}`.trim() : false)
 
-const DB_PATH =
-  getBackOptions(OPT_DB_PATH) || pathJoin(getDbConf('db_directory'), getDbConf('db_filename'))
+const DB_PATH = getBackOptions(OPT_DB_PATH) || pathJoin(getDbConf('db_directory'), getDbConf('db_filename'))
 
 exports.getDbPath = () => DB_PATH
 

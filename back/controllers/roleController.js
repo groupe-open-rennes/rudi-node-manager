@@ -1,3 +1,5 @@
+const mod = 'roleCtrl'
+
 const errorHandler = require('./errorHandler')
 const {
   dbGetRoles,
@@ -10,6 +12,7 @@ const {
   dbClose,
 } = require('../database/database')
 const { BadRequestError } = require('../utils/errors')
+const log = require('../utils/logger.js')
 
 exports.getRoleList = async (req, reply, next) => {
   try {
@@ -27,7 +30,7 @@ exports.getRoleList = async (req, reply, next) => {
     try {
       reply.status(error.statusCode).json(error)
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'getRoleList', e)
     }
   }
 }
@@ -41,7 +44,7 @@ exports.getRoleById = (req, reply, next) => {
       try {
         reply.status(error.statusCode).json(error)
       } catch (e) {
-        console.error(e)
+        log.w(mod, 'getRoleById', e)
       }
     })
 }
@@ -49,8 +52,7 @@ exports.getRoleById = (req, reply, next) => {
 // User_Roles
 exports.getUserRolesByUsername = async (req, reply, next) => {
   const { username } = req.params
-  if (!username)
-    return reply.status(400).json(new BadRequestError('Request should provide a username'))
+  if (!username) return reply.status(400).json(new BadRequestError('Request should provide a username'))
 
   try {
     const roles = await dbGetUserRolesByUsername(null, username)
@@ -60,7 +62,7 @@ exports.getUserRolesByUsername = async (req, reply, next) => {
     try {
       reply.status(error.statusCode).json(error)
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'getUserRolesByUsername', e)
     }
   }
 }
@@ -77,7 +79,7 @@ exports.deleteUserRole = async (req, reply, next) => {
     try {
       reply.status(error.statusCode).json(error)
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'deleteUserRole', e)
     }
   }
 }
@@ -85,20 +87,19 @@ exports.postUserRole = async (req, reply, next) => {
   try {
     const db = dbOpen()
     const { userId, username, role } = req.body
-    if (userId !== 0 && !userId)
-      return reply.status(400).json(new BadRequestError('A userId should be provided'))
+    if (userId !== 0 && !userId) return reply.status(400).json(new BadRequestError('A userId should be provided'))
     if (!role) return reply.status(400).json(new BadRequestError('A role should be provided'))
     const { userId: id } = await dbCreateUserRole(db, { userId, username, role })
     const user = await dbGetUserById(db, id)
     dbClose(db)
     reply.status(200).json(user)
   } catch (err) {
-    console.error(err)
+    log.w(mod, 'postUserRole', err)
     const error = errorHandler.error(err, req, { opType: 'post_userRole' })
     try {
       reply.status(error?.statusCode).json(error)
     } catch (e) {
-      console.error(e)
+      log.e(mod, 'postUserRole', e)
     }
   }
 }

@@ -45,30 +45,23 @@ exports.getStorageToken = async (req, reply, next) => {
     // We extract
     const jwt = extractCookieFromReq(req, CONSOLE_TOKEN_NAME) || extractJwt(req)
     if (!jwt) {
-      console.error('T (getMediaToken) req:', req)
+      // console.error('T (getMediaToken) req:', req)
       throw new UnauthorizedError('No JWT was found in the request')
     }
 
     const jwtPayload = readJwtBody(jwt)
     const payloadUser = jwtPayload.user
     if (!payloadUser)
-      throw new UnauthorizedError(
-        `JWT body token should contain an identified user: ${beautify(jwtPayload)}`
-      )
+      throw new UnauthorizedError(`JWT body token should contain an identified user: ${beautify(jwtPayload)}`)
 
     const user = await dbGetUserByUsername(null, payloadUser.username) // NOSONAR
-    if (!user)
-      return reply.status(404).json(new NotFoundError(`User not found: ${payloadUser.username}`))
+    if (!user) return reply.status(404).json(new NotFoundError(`User not found: ${payloadUser.username}`))
 
     const mediaToken = await getTokenFromMediaForUser(user)
 
     return reply.status(200).send({ token: mediaToken })
   } catch (err) {
-    log.e(
-      mod,
-      fun,
-      `!! Liaison avec le module “${STORAGE}” incomplète, création de JWT impossible: ` + err
-    )
+    log.e(mod, fun, `!! Liaison avec le module “${STORAGE}” incomplète, création de JWT impossible: ` + err)
     if (err.code == 'ECONNREFUSED')
       return reply.status(500).json({
         statusCode: 500,
@@ -157,7 +150,7 @@ const commitOnStorage = async (mediaId, commitId, zoneName) => {
       JSON.stringify({ commit_uuid: commitId, zone_name: zoneName }),
       getStorageHeaders()
     )
-    log.d(mod, fun, commitMediaRes?.statusText || commitMediaRes?.data || commitMediaRes)
+    // log.d(mod, fun, commitMediaRes?.statusText || commitMediaRes?.data || commitMediaRes)
     return { status: 'OK', place: 'rudi-media', media_id: mediaId, commit_id: commitId }
   } catch (err) {
     log.e(mod, fun + '.origErr', err)
@@ -197,13 +190,13 @@ const commitOnRudiApi = async (mediaId, commitId) => {
       getCatalogHeaders()
     )
     const commitInfo = res.data
-    log.d(mod, fun, 'T (commitMedia) commit API OK:', commitInfo)
+    // log.d(mod, fun, `T (${fun}) commit API OK:`, commitInfo)
     return { place: CATALOG, ...commitInfo }
   } catch (err) {
-    console.error(
-      `T (commitMedia) ERR${err.response?.status || err.statusCode || ''} Api commit:`,
-      err.response?.data || err.response?.statusText || err.response
-    )
+    // console.error(
+    //   `T (${fun}) ERR${err.response?.status || err.statusCode || ''} Api commit:`,
+    //   err.response?.data || err.response?.statusText || err.response
+    // )
     throw err
   }
 }

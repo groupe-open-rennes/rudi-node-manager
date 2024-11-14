@@ -1,3 +1,5 @@
+const mod = 'usrCtrl'
+
 const { hashPassword } = require('@aqmo.org/jwt-lib')
 
 const errorHandler = require('./errorHandler')
@@ -17,6 +19,7 @@ const {
   dbGetUserInfoByUsername,
 } = require('../database/database')
 const { initPwdSecret } = require('../utils/secu.js')
+const log = require('../utils/logger.js')
 
 const INIT_PWD = initPwdSecret()
 
@@ -29,7 +32,7 @@ exports.getUsersList = async (req, reply, next) => {
     try {
       reply.status(error.statusCode).json(new RudiError(error.message))
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'getUsersList', e)
     }
   }
 }
@@ -46,7 +49,7 @@ exports.getUserByUsername = async (req, reply, next) => {
     try {
       reply.status(error.statusCode || 500).json(new RudiError(error.message))
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'getUserByUsername', e)
     }
   }
 }
@@ -63,7 +66,7 @@ exports.getUserInfoByUsername = async (req, reply, next) => {
     try {
       reply.status(error.statusCode || 500).json(new RudiError(error.message))
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'getUserInfoByUsername', e)
     }
   }
 }
@@ -86,7 +89,7 @@ exports.deleteUserWithName = async (req, reply, next) => {
     try {
       reply.status(error.statusCode).json(new RudiError(error.message))
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'deleteUserWithName', e)
     }
   }
 }
@@ -105,7 +108,7 @@ exports.deleteUserWithId = async (req, reply, next) => {
     try {
       reply.status(error.statusCode).json(new RudiError(error.message))
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'deleteUserWithId', e)
     }
   }
 }
@@ -115,18 +118,10 @@ exports.createUser = async (req, reply) => {
     const userInfo = req.body
     // console.trace('T (addUser) userInfo', userInfo)
     const { username, email, password, roles } = userInfo
-    if (!username)
-      return reply
-        .status(400)
-        .json(new BadRequestError('La requête doit comporter un username non null'))
-    if (!email)
-      return reply
-        .status(400)
-        .json(new BadRequestError('La requête doit comporter un email non null'))
+    if (!username) return reply.status(400).json(new BadRequestError('La requête doit comporter un username non null'))
+    if (!email) return reply.status(400).json(new BadRequestError('La requête doit comporter un email non null'))
     if (!roles || !Array.isArray(roles) || roles.length == 0)
-      return reply
-        .status(400)
-        .json(new BadRequestError('La requête doit définir un rôle pour l‘utilisateur'))
+      return reply.status(400).json(new BadRequestError('La requête doit définir un rôle pour l‘utilisateur'))
 
     const hashedPassword = hashPassword(password || INIT_PWD)
 
@@ -155,7 +150,7 @@ exports.createUser = async (req, reply) => {
     try {
       reply.status(500).json(new RudiError(error.message))
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'createUser', e)
     }
   }
 }
@@ -165,9 +160,7 @@ exports.editUser = async (req, reply, next) => {
     const { id, email, roles } = req.body
     let username = req.body.username
     if ((id !== 0 && !id) || !username || !email || !roles) {
-      return reply
-        .status(400)
-        .json(new BadRequestError('Payload attendue: {id, username, email, roles}'))
+      return reply.status(400).json(new BadRequestError('Payload attendue: {id, username, email, roles}'))
     }
     const db = dbOpen()
     const reqUsername = req?.user?.username
@@ -182,9 +175,7 @@ exports.editUser = async (req, reply, next) => {
     const dbUserSameName = await dbGetUserByUsername(db, username)
     if (dbUserSameName && dbUserSameName.id !== dbUser.id) {
       dbClose(db)
-      return reply
-        .status(403)
-        .json(`Ce nom est déjà utilisé: '${username}' (${dbUserSameName.id} !== ${dbUser.id})`)
+      return reply.status(403).json(`Ce nom est déjà utilisé: '${username}' (${dbUserSameName.id} !== ${dbUser.id})`)
     }
     const dbUserSameMail = await dbGetUserByEmail(db, email)
     if (dbUserSameMail && dbUserSameMail.id !== dbUser.id) {
@@ -201,7 +192,7 @@ exports.editUser = async (req, reply, next) => {
     try {
       reply.status(500).json(new RudiError(error.message))
     } catch (e) {
-      console.error(e)
+      log.w(mod, 'editUser', e)
     }
   }
 }

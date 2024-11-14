@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const mod = 'manager.app'
 
 // -------------------------------------------------------------------------------------------------
@@ -79,7 +80,7 @@ async function connectToRudiModules(attemptLeft = 20) {
       )
     await Promise.all(promises)
     return [catalogUrl, storageUrl]
-  } catch (e) {
+  } catch {
     await sleep(1000)
     // log.d(mod, fun, `attempt ${attemptLeft}`)
     return connectToRudiModules(attemptLeft - 1)
@@ -145,8 +146,15 @@ const launchExpressApp = async ({ catalogUrl, storageUrl }) => {
     const logReqMsg = `Request <= ${req?.method} ${req?.url} (from ${req?.ip})`
     log.sysInfo(mod, '', logReqMsg, log.getContext(req, {}))
 
-    // console.log('req.headers.cookie:', req.headers.cookie)
-    next()
+    // Redirection for trailing slashes
+    // https://stackoverflow.com/a/15773824/1563072
+    if (req.path.length > 1 && req.path.slice(-1) === '/') {
+      const query = req.url.slice(req.path.length)
+      const safepath = req.path.slice(0, -1).replace(/\/+/g, '/')
+      reply.redirect(301, safepath + query)
+    } else {
+      next()
+    }
 
     reply.on('finish', () => {
       if (reply.statusCode < 400) {
@@ -154,7 +162,7 @@ const launchExpressApp = async ({ catalogUrl, storageUrl }) => {
         log.sysInfo(mod, '', okReplyMsg, log.getContext(req, {}))
       } else {
         const errReplyMsg = `=> ERR ${reply.statusCode} ${reply.statusMessage} > ${req.method} ${req.originalUrl}`
-        log.sysWarn(mod, '', errReplyMsg, log.getContext(req, {}))
+        log.sysError(mod, '', errReplyMsg, log.getContext(req, {}))
       }
     })
   })
@@ -206,11 +214,9 @@ const launchExpressApp = async ({ catalogUrl, storageUrl }) => {
   // This middleware informs the express application to serve our compiled React files
   // if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
   if (!isDevEnv()) {
-    console.log('Serving the built static page')
+    log.i(mod, 'serve', 'Serving the built static page')
     managerApp.use(express.static(path.join(__dirname, 'front/build')))
-    managerApp.get('/*', (req, reply) =>
-      reply.sendFile(path.join(__dirname, 'front/build/index.html'))
-    )
+    managerApp.get('/*', (req, reply) => reply.sendFile(path.join(__dirname, 'front/build/index.html')))
   }
 
   // Init database on startup
@@ -223,9 +229,7 @@ const launchExpressApp = async ({ catalogUrl, storageUrl }) => {
   }
 
   // Catch any bad requests
-  managerApp.get('*', (req, reply) =>
-    reply.status(404).send(`Route '${req?.method} ${req?.url}' not found`)
-  )
+  managerApp.get('*', (req, reply) => reply.status(404).send(`Route '${req?.method} ${req?.url}' not found`))
 
   // Configure our server to listen on the port defiend by our port variable
   const managerServer = managerApp.listen(listeningPort, listeningAddress, () =>
@@ -252,7 +256,7 @@ async function runManagerBackend() {
 }
 
 async function shutDown(managerServer, signal) {
-  console.debug(`Closing session on signal ${signal}`)
+  log.d(mod, 'shutDown', `Closing session on signal ${signal}`)
   managerServer.close(() => {
     console.log('Closed out remaining connections')
     process.exit(0)

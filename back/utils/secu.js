@@ -31,8 +31,7 @@ function isJwtValid(jwt) {
   return jwtParts?.payload?.exp > timeEpochS()
 }
 
-exports.extractCookieFromReq = (req, cookieName = this.CONSOLE_TOKEN_NAME) =>
-  req?.cookies?.[cookieName]
+exports.extractCookieFromReq = (req, cookieName = this.CONSOLE_TOKEN_NAME) => req?.cookies?.[cookieName]
 
 exports.readJwtBody = (jwt) => {
   if (!jwt) throw new ForbiddenError(`No JWT provided`, mod, 'readJwtBody')
@@ -87,7 +86,7 @@ exports.refreshTokens = (req) => {
   const fun = 'renewTokens'
   const user = req.user
   if (!user) {
-    log.sysWarn(mod, fun, 'No user found in req')
+    log.w(mod, fun, 'No user found in req')
     return
   }
   // log.sysInfo(mod, fun, `Refreshing tokens for user '${user.username}'`)
@@ -182,8 +181,7 @@ exports.createPmHeadersForMedia = (body) => {
   return {
     headers: {
       Authorization: `Bearer ${pmHeadersJwt}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      Accept: 'application/json, text/plain, */*',
     },
   }
 }
@@ -214,7 +212,7 @@ exports.getRudiApiToken = () => {
 
 exports.getCatalogHeaders = () => ({
   headers: {
-    'Content-Type': 'application/json',
+    Accept: 'application/json, text/plain, */*',
     Authorization: `Bearer ${this.getRudiApiToken()}`,
   },
 })

@@ -104,7 +104,7 @@ const dbInitTable = (openedDb, tableName, sqlCreateReq) => {
           log.e(mod, `${fun}.${tableName}.create`, err.message)
           return reject(err)
         }
-        log.i(
+        log.sysInfo(
           mod,
           `${fun}.${tableName}.create`,
           `Table Created : ${tableName}`,
@@ -144,17 +144,14 @@ const dbNormalizeRoleTableAddHide = (openedDb) => {
           log.d(mod, `${fun}.addHide`, err.message)
           return reject(err)
         }
-        db.run(
-          `UPDATE ${TBL_ROLES} SET hide=1 WHERE role='${this.ROLE_SU}' OR role='Moniteur' `,
-          (err) => {
-            if (err) {
-              if (!openedDb) dbClose(db)
-              log.d(mod, `${fun}.setHideFlag`, err.message)
-              return reject(err)
-            }
-            return resolve(statusOK(`Column 'hide added & role flags set`))
+        db.run(`UPDATE ${TBL_ROLES} SET hide=1 WHERE role='${this.ROLE_SU}' OR role='Moniteur' `, (err) => {
+          if (err) {
+            if (!openedDb) dbClose(db)
+            log.d(mod, `${fun}.setHideFlag`, err.message)
+            return reject(err)
           }
-        )
+          return resolve(statusOK(`Column 'hide added & role flags set`))
+        })
       })
     })
   })
@@ -166,34 +163,29 @@ const dbRenameUserRoles = (openedDb) => {
     dbGetUserRoles(db).then((roleList) => {
       const found = roleList.find(
         (roleDescPair) =>
-          roleDescPair.role == 'Createur' ||
-          roleDescPair.role == 'Créateur' ||
-          roleDescPair.role == 'Gestionnaire'
+          roleDescPair.role == 'Createur' || roleDescPair.role == 'Créateur' || roleDescPair.role == 'Gestionnaire'
       )
       if (!found) {
         if (!openedDb) dbClose(db)
         log.d(mod, `${fun}`, `UserRoles already renamed`)
         return resolve(statusOK(`UserRoles already renamed`))
       }
-      db.run(
-        `UPDATE ${TBL_USER_ROLES} SET role='Lecteur' WHERE role='Createur' OR role='Créateur'`,
-        (err) => {
-          if (err) {
-            if (!openedDb) dbClose(db)
-            log.d(mod, `${fun}.Lecteur`, err.message)
-            return reject(new RudiError(`${fun}.Lecteur: ${err}`))
-          }
-          db.run(`UPDATE ${TBL_USER_ROLES} SET role='Editeur' WHERE role='Gestionnaire'`, (err) => {
-            if (!openedDb) dbClose(db)
-            if (err) {
-              log.d(mod, `${fun}.Editeur`, err.message)
-              return reject(new RudiError(`${fun}.Editeur: ${err}`))
-            }
-            log.d(mod, `${fun}`, `UserRoles renamed`)
-            return resolve(statusOK(`UserRoles renamed`))
-          })
+      db.run(`UPDATE ${TBL_USER_ROLES} SET role='Lecteur' WHERE role='Createur' OR role='Créateur'`, (err) => {
+        if (err) {
+          if (!openedDb) dbClose(db)
+          log.d(mod, `${fun}.Lecteur`, err.message)
+          return reject(new RudiError(`${fun}.Lecteur: ${err}`))
         }
-      )
+        db.run(`UPDATE ${TBL_USER_ROLES} SET role='Editeur' WHERE role='Gestionnaire'`, (err) => {
+          if (!openedDb) dbClose(db)
+          if (err) {
+            log.d(mod, `${fun}.Editeur`, err.message)
+            return reject(new RudiError(`${fun}.Editeur: ${err}`))
+          }
+          log.d(mod, `${fun}`, `UserRoles renamed`)
+          return resolve(statusOK(`UserRoles renamed`))
+        })
+      })
     })
   })
 }
@@ -205,9 +197,7 @@ const dbRenameRoles = (openedDb) => {
       .then((roleList) => {
         const found = roleList.find(
           (roleDescPair) =>
-            roleDescPair.role == 'Createur' ||
-            roleDescPair.role == 'Créateur' ||
-            roleDescPair.role == 'Gestionnaire'
+            roleDescPair.role == 'Createur' || roleDescPair.role == 'Créateur' || roleDescPair.role == 'Gestionnaire'
         )
         if (!found) {
           if (!openedDb) dbClose(db)
@@ -249,41 +239,37 @@ const dbNormalizeUserTableName = (openedDb, oldTblName) => {
   const tempName = `x${oldTblName}x`
   const db = openedDb || dbOpen()
   return new Promise((resolve, reject) => {
-    db.get(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name='${oldTblName}'`,
-      [],
-      (err, row) => {
+    db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='${oldTblName}'`, [], (err, row) => {
+      if (err) {
+        if (!openedDb) dbClose(db)
+        log.e(mod, `${fun}.check`, err.message)
+        return reject(err)
+      }
+      if (!row) {
+        if (!openedDb) dbClose(db)
+        return resolve(`No table found with name '${oldTblName}'`)
+      }
+      log.d(mod, `${fun}.check`, JSON.stringify(row))
+
+      db.run(`ALTER TABLE '${oldTblName}' RENAME TO '${tempName}'`, [], (err, row) => {
         if (err) {
           if (!openedDb) dbClose(db)
-          log.e(mod, `${fun}.check`, err.message)
+          log.e(mod, `${fun}.renameToto`, err.message)
           return reject(err)
         }
-        if (!row) {
+        log.d(mod, `${fun}.renameToto`, JSON.stringify(row))
+        db.run(`ALTER TABLE '${tempName}' RENAME TO '${TBL_USERS}'`, [], (err, row) => {
           if (!openedDb) dbClose(db)
-          return resolve(`No table found with name '${oldTblName}'`)
-        }
-        log.d(mod, `${fun}.check`, JSON.stringify(row))
-
-        db.run(`ALTER TABLE '${oldTblName}' RENAME TO '${tempName}'`, [], (err, row) => {
           if (err) {
-            if (!openedDb) dbClose(db)
-            log.e(mod, `${fun}.renameToto`, err.message)
-            return reject(err)
+            log.e(mod, `${fun}.renameReal`, err.message)
+            reject(err)
+          } else {
+            log.d(mod, fun, JSON.stringify(row))
+            resolve('Users table name normalized')
           }
-          log.d(mod, `${fun}.renameToto`, JSON.stringify(row))
-          db.run(`ALTER TABLE '${tempName}' RENAME TO '${TBL_USERS}'`, [], (err, row) => {
-            if (!openedDb) dbClose(db)
-            if (err) {
-              log.e(mod, `${fun}.renameReal`, err.message)
-              reject(err)
-            } else {
-              log.d(mod, fun, JSON.stringify(row))
-              resolve('Users table name normalized')
-            }
-          })
         })
-      }
-    )
+      })
+    })
   })
 }
 
@@ -302,8 +288,7 @@ const dbNormalizeUserTableId = async (db) => {
         },
         true
       )
-    if (dummyUsr?.username === dummyUserName)
-      await dbDeleteUserWithId(db, USER_ID_START_VALUE, true)
+    if (dummyUsr?.username === dummyUserName) await dbDeleteUserWithId(db, USER_ID_START_VALUE, true)
     return statusOK(`Users table IDs normalized`)
   } catch (err) {
     log.e(mod, 'dbNormalizeUsersTableId', err)
@@ -330,14 +315,19 @@ const dbInitSuperUser = async (db, b64SuCreds) => {
         username,
         roles: [this.ROLE_SU],
       })
-      log.w(
-        mod,
-        fun,
-        `Super user updated: '${username}' (id ${dbUsrInfo.id}, role ${this.ROLE_SU})`
-      )
+      log.w(mod, fun, `Super user updated: '${username}' (id ${dbUsrInfo.id}, role ${this.ROLE_SU})`)
     } else {
       // Super user doesn't exists, creating the user
       const id = getSuId()
+      const testUserExist = await dbGetUserById(db, id) // NOSONAR
+      if (testUserExist) {
+        log.w(
+          mod,
+          fun,
+          `User already exists for id ${id} (username: '${testUserExist.username}', role: ${testUserExist.roles}), skipping creation of a new super user`
+        )
+        return
+      }
       log.w(mod, fun, `Creating super user: '${username}' (id ${id})`)
       const suUsrInfo = {
         id,
@@ -365,42 +355,45 @@ const dbInitSuperUser = async (db, b64SuCreds) => {
 
 const dbCreateSuperUser = async (db) => {
   const fun = 'dbCreateSuperUser'
-
-  const encodedSuPwd = getSuPwd()
-  const isSuPwdHashed = isSuPwdB64()
-
-  if (!getSuName() || !encodedSuPwd) {
-    log.e(mod, fun, 'No super user config was found')
-    throw new RudiError('Conf needed: database.db_su_usr + database.db_su_pwd')
-  }
-
-  if (await dbExistsUser(db, getSuName)) return // NOSONAR
-
-  const suId = getSuId()
-  const suInfo = await dbGetUserById(db, suId) // NOSONAR
-  if (suInfo) {
-    log.i(mod, fun, `Super user exists: ${beautify(suInfo)}`)
-    return
-  } // NOSONAR
-
-  const suPwd = !isSuPwdHashed ? decodeBase64(encodedSuPwd) : encodedSuPwd
-
-  const superUser = {
-    id: suId,
-    username: getSuName(),
-    password: suPwd,
-    isSuPwdHashed,
-    email: SU_MAIL,
-    role: this.ROLE_SU,
-  }
-
-  const res = await dbRegisterUser(db, superUser)
-  const { id, username } = res
   try {
-    await dbCreateUserRole(db, { userId: id, role: superUser.role })
-    const msg = `Super user role created: '${username}' (id ${id}, role ${superUser.role})`
-    log.i(mod, fun, msg)
-    return statusOK(msg)
+    const encodedSuPwd = getSuPwd()
+    const isSuPwdHashed = isSuPwdB64()
+
+    if (!getSuName() || !encodedSuPwd) {
+      log.e(mod, fun, 'No super user config was found')
+      throw new RudiError('Conf needed: database.db_su_usr + database.db_su_pwd')
+    }
+
+    if (await dbExistsUser(db, getSuName)) return // NOSONAR
+
+    const suId = getSuId()
+    const suInfo = await dbGetUserById(db, suId) // NOSONAR
+    if (suInfo) {
+      log.i(mod, fun, `Super user exists: ${beautify(suInfo)}`)
+      return
+    } // NOSONAR
+
+    const suPwd = !isSuPwdHashed ? decodeBase64(encodedSuPwd) : encodedSuPwd
+
+    const superUser = {
+      id: suId,
+      username: getSuName(),
+      password: suPwd,
+      isSuPwdHashed,
+      email: SU_MAIL,
+      role: this.ROLE_SU,
+    }
+
+    const res = await dbRegisterUser(db, superUser)
+    const { id, username } = res
+    try {
+      await dbCreateUserRole(db, { userId: id, role: superUser.role })
+      const msg = `Super user role created: '${username}' (id ${id}, role ${superUser.role})`
+      log.i(mod, fun, msg)
+      return statusOK(msg)
+    } catch (err) {
+      log.e(mod, fun, `Error: ${err}`)
+    }
   } catch (err) {
     log.e(mod, fun, `Error: ${err}`)
   }

@@ -1,16 +1,24 @@
+/* eslint-disable no-console */
+
+// -------------------------------------------------------------------------------------------------
+// External dependencies
+// -------------------------------------------------------------------------------------------------
 const { floor, isInteger } = require('lodash')
 const { inspect } = require('util')
 const { v4 } = require('uuid')
 
-// ---- Dates
+// -------------------------------------------------------------------------------------------------
+// Dates
+// -------------------------------------------------------------------------------------------------
 exports.timeEpochMs = (delayMs = 0) => new Date().getTime() + delayMs
 exports.timeEpochS = (delayS = 0) => floor(this.timeEpochMs() / 1000) + delayS
 
 exports.nowFormatted = () => new Date().toISOString().replace(/T\./, ' ').replace('Z', '')
 
-// ---- Strings
-exports.removeTrailingChar = (str, char) =>
-  `${str}`.endsWith(char) ? `${str}`.slice(0, -1) : `${str}`
+// -------------------------------------------------------------------------------------------------
+// Strings
+// -------------------------------------------------------------------------------------------------
+exports.removeTrailingChar = (str, char) => (`${str}`.endsWith(char) ? `${str}`.slice(0, -1) : `${str}`)
 exports.removeTrailingSlash = (path) => this.removeTrailingChar(path, '/')
 
 /**
@@ -29,9 +37,7 @@ exports.mergeStrings = (sep, ...args) => {
     if (args[i] === undefined || args[i] === null) break
     const newChunk = `${args[i]}`
     const cleanChunk = newChunk.startsWith(sep) ? newChunk.slice(1) : newChunk
-    accumulatedStr = accumulatedStr.endsWith(sep)
-      ? accumulatedStr + cleanChunk
-      : accumulatedStr + sep + cleanChunk
+    accumulatedStr = accumulatedStr.endsWith(sep) ? accumulatedStr + cleanChunk : accumulatedStr + sep + cleanChunk
   }
   return accumulatedStr
 }
@@ -67,10 +73,8 @@ exports.toInt = (str) => {
  */
 exports.beautify = (jsonObject, option) => {
   try {
-    return `${JSON.stringify(jsonObject, null, option).replace(/\\"/g, '"')}${
-      option != null ? '\n' : ''
-    }`
-  } catch (err) {
+    return `${JSON.stringify(jsonObject, null, option).replace(/\\"/g, '"')}${option != null ? '\n' : ''}`
+  } catch {
     return `${inspect(jsonObject)}`
   }
 }
@@ -96,9 +100,7 @@ exports.makeRequestable = (func) => async (req, reply, next) => {
         .status(err.statusCode || 500)
         .json({ statusCode: err.statusCode, error: err.error, message: err.message })
     if (typeof err.message == 'string')
-      return reply
-        .status(err.statusCode || 500)
-        .json({ statusCode: err.statusCode || 500, message: err.message })
+      return reply.status(err.statusCode || 500).json({ statusCode: err.statusCode || 500, message: err.message })
     reply.status(500).json({ statusCode: 500, message: this.cleanErrMsg(err) })
   }
 }
