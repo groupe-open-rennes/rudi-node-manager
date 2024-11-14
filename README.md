@@ -5,7 +5,7 @@
 </p>
 
 <h2 align="center" >RUDI Node Manager</h3>
-<p align="center">Interface utilisateur du nœud RUDI, permettant la gestion et l'administration de la plateforme.</p>
+<p align="center">Interface utilisateur du nœud RUDI, une application open source permettant aux producteurs de données de publier leurs données dans le catalogue du portail Rudi tout en en gardant la maîtrise (stockage, renseignements et droits d’accès).</p>
 
 <p align="center"><a href="https://rudi.rennesmetropole.fr/">🌐 Instance de Rennes Métropole</a> · <a href="doc.rudi.bzh">📚 Documentation</a> ·  <a href="https://blog.rudi.bzh/">📰 Blog</a><p>
 
