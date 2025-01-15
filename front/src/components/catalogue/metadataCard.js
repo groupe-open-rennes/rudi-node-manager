@@ -5,10 +5,9 @@ import React, { useContext, useEffect, useState } from 'react'
 import { BoxArrowUpRight, CloudDownload, CloudSlash, Eye, Pencil, Share, Trash } from 'react-bootstrap-icons'
 import { Link } from 'react-router-dom'
 
-import { BackDataContext } from '../../context/backDataContext'
-import { getForm } from '../../utils/frontOptions.js'
+import { BackConfContext } from '../../context/backConfContext.js'
 import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
-import { getLocaleFormatted, pathJoin } from '../../utils/utils'
+import { getLocaleFormatted } from '../../utils/utils'
 import { DefaultConfirmOption, DefaultOkOption, useModalContext } from '../modals/genericModalContext'
 import FileSizeDisplay from '../other/fileSizeDisplay'
 import ThemeDisplay from '../other/themeDisplay'
@@ -110,26 +109,25 @@ export const displayMetadataStatus = (metadata) =>
  * @return {ReactNode}
  */
 export default function MetadataCard({ editMode, metadata, refresh, logout }) {
-  const { appInfo } = useContext(BackDataContext)
-  const { changeOptions, toggle } = useModalContext()
-
   const { defaultErrorHandler } = useDefaultErrorHandler()
-  const [appData, setAppData] = useState(appInfo)
-  useEffect(() => setAppData(appInfo), [appInfo])
 
-  const [formUrl, setFormUrl] = useState('')
-  useEffect(() => setFormUrl(appInfo?.formUrl || 'form'), [appInfo])
-  const getFormMeta = (query) => getForm(formUrl, 'metadata', query)
+  const { backConf } = useContext(BackConfContext)
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
 
+  const { changeOptions, toggle } = useModalContext()
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
+
+  const getFormMeta = (query) => back?.isLoaded && back?.getConsole('metadata', query)
 
   /**
    * call for metadata deletion
    */
-  function deleteRessource() {
+  const deleteRessource = () =>
+    back?.isLoaded &&
     axios
-      .delete(`api/data/resources/${metadata.global_id}`)
+      .delete(back.getBackCatalog('resources', metadata.global_id))
       .then((res) => {
         const options = DefaultOkOption
         options.text = [`La métadonnée ${res.data.resource_title} a été supprimée`]
@@ -143,7 +141,7 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
         toggle()
       })
       .catch((err) => (err.response?.status == 401 ? logout() : defaultErrorHandler(err)))
-  }
+
   /**
    * call for confirmation before metadata deletion
    * @param {*} metadata metadata a suppr
@@ -225,7 +223,7 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
     media.file_storage_status === 'missing' ? displayMissingMedia(media) : displayAvailableMedia(media)
 
   const button = {
-    share: shareButton(pathJoin(appData.apiExtUrl, 'api/v1/resources', metadata.global_id)),
+    share: shareButton(back?.isLoaded && back.getCatalogPub('v1/resources', metadata.global_id)),
     edit: editButton(getFormMeta(`update=${metadata.global_id}`)),
     delete: deleteButton(triggerDeleteRessource),
     download: (url) => downloadButton(url),

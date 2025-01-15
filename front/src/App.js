@@ -5,14 +5,9 @@ import axios from 'axios'
 import React, { useContext, useEffect, useState } from 'react'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropdownButton from 'react-bootstrap/DropdownButton'
-import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
-
-import { createBrowserHistory } from 'history'
-
-import { PUBLIC_URL, getApiFront, getFrontOptions, getPublicUrl } from './utils/frontOptions'
+import { Link, Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 import { UserContext } from './context/authContext'
-import { BackDataContext } from './context/backDataContext'
 
 import ChangePwd, { showPill as showPillChgPwd } from './components/login/changePwd'
 import Login, { showPill as showPillLogin } from './components/login/login'
@@ -25,20 +20,10 @@ import CatalogueProducer from './components/generic/catalogueProducer'
 import CataloguePubKeys from './components/generic/cataloguePubKeys'
 import CatalogueReports from './components/generic/catalogueReports'
 import ModalProvider from './components/modals/genericModalContext'
-import Monitoring from './components/monitoring/monitoring'
 import CatalogueUser from './components/users/catalogueUser'
 import Visualisation from './components/visualisation/visualisation'
+import { BackConfContext } from './context/backConfContext.js'
 import { JwtContext } from './context/jwtContext'
-
-export const history = createBrowserHistory({ basename: getPublicUrl() })
-
-/*
-TODO :
-- sticky filtre
-- responsive
-- filtre/sort/search
-- remove key={...+i} when possible
-*/
 
 /**
  * Main App component
@@ -48,7 +33,17 @@ export default function App() {
   // ---------------- Loading context
   const { token, updateToken } = useContext(JwtContext)
   const { isEditor, isAdmin } = useContext(UserContext)
-  const { appInfo } = useContext(BackDataContext)
+
+  const { backConf } = useContext(BackConfContext)
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
+
+  const [rootUrl, setRootUrl] = useState(window.location.pathname)
+  useEffect(() => {
+    if (!back.isLoaded) return
+    console.debug('Setting root to', back.frontPath)
+    setRootUrl(back.frontPath)
+  }, [backConf])
 
   // ---------------- Login modals
   const [isLoginOpen, setIsLoginOpen] = useState(true)
@@ -82,15 +77,14 @@ export default function App() {
    */
   const displayVersion = () => (
     <div id="displayTags">
-      <div className="appTag">{appInfo.appTag}</div>
-      <div className="gitTag">{appInfo.gitHash}</div>
+      <div className="appTag">{back?.appTag}</div>
+      <div className="gitTag">{back?.gitHash}</div>
     </div>
   )
 
   const [displayTags, setDisplayTags] = useState(displayVersion())
 
-  useEffect(() => setDisplayTags(displayVersion()), [appInfo?.appTag, appInfo?.gitHash])
-  // useEffect(() => console.trace('T (displayAppInfo) appInfo', appInfo), [appInfo])
+  useEffect(() => setDisplayTags(displayVersion()), [backConf])
 
   /**
    *
@@ -115,18 +109,15 @@ export default function App() {
    * logout
    * @return {void}
    */
-  const logout = () => {
+  const logout = () =>
+    back?.isLoaded &&
     axios
-      .get(getApiFront('logout'))
-      .then((res) => {
-        // console.debug('T (logout.ok)')
-        exit()
-      })
+      .get(back.getBackFront('logout'))
+      .then(exit)
       .catch((err) => {
         console.error('T (logout.ko)', err)
         exit()
       })
-  }
 
   return !token ? (
     <div>
@@ -140,7 +131,7 @@ export default function App() {
       </div>
     </div>
   ) : (
-    <Router basename={getFrontOptions(PUBLIC_URL)}>
+    <Router basename={rootUrl}>
       <ModalProvider>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="modal-test"></div>
@@ -209,6 +200,7 @@ export default function App() {
         <div id="root"></div>
 
         <Routes>
+          <Route path="/" element={<CatalogueMetadata editMode={isEditor} logout={logout} />} />
           <Route path="metadata" element={<CatalogueMetadata editMode={isEditor} logout={logout} />} />
           <Route path="producer" element={<CatalogueProducer editMode={isEditor} logout={logout} />} />
           <Route path="contact" element={<CatalogueContact editMode={isEditor} logout={logout} />} />
@@ -217,10 +209,8 @@ export default function App() {
           <Route path="licence" element={<CatalogueLicence logout={logout} />} />
           <Route path="show/:id" element={<Visualisation logout={logout} />} />
           <Route path="show" element={<Visualisation logout={logout} />} />
-          <Route path="monitoring" element={<Monitoring logout={logout} />} />
           <Route path="user" element={<CatalogueUser editMode={isAdmin} logout={logout} />} />
-          <Route path="conf" element={<div className="tempPaddingTop">WIP</div>} />
-          <Route path="*" element={<CatalogueMetadata editMode={isEditor} logout={logout} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ModalProvider>
     </Router>

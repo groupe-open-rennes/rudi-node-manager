@@ -3,23 +3,30 @@
 // -------------------------------------------------------------------------------------------------
 // External dependencies
 // -------------------------------------------------------------------------------------------------
-const { floor, isInteger } = require('lodash')
-const { inspect } = require('util')
-const { v4 } = require('uuid')
+
+import { execSync } from 'child_process'
+import { existsSync, readdirSync, statSync } from 'fs'
+import _ from 'lodash'
+import { normalize } from 'path'
+const { floor, isInteger } = _
+
+import { inspect } from 'util'
+import { v4 } from 'uuid'
 
 // -------------------------------------------------------------------------------------------------
 // Dates
 // -------------------------------------------------------------------------------------------------
-exports.timeEpochMs = (delayMs = 0) => new Date().getTime() + delayMs
-exports.timeEpochS = (delayS = 0) => floor(this.timeEpochMs() / 1000) + delayS
+export const timeEpochMs = (delayMs = 0) => new Date().getTime() + delayMs
 
-exports.nowFormatted = () => new Date().toISOString().replace(/T\./, ' ').replace('Z', '')
+export const timeEpochS = (delayS = 0) => floor(timeEpochMs() / 1000) + delayS
+
+export const nowFormatted = () => new Date().toISOString().replace(/T\./, ' ').replace('Z', '')
 
 // -------------------------------------------------------------------------------------------------
 // Strings
 // -------------------------------------------------------------------------------------------------
-exports.removeTrailingChar = (str, char) => (`${str}`.endsWith(char) ? `${str}`.slice(0, -1) : `${str}`)
-exports.removeTrailingSlash = (path) => this.removeTrailingChar(path, '/')
+export const removeTrailingChar = (str, char) => (`${str}`.endsWith(char) ? `${str}`.slice(0, -1) : `${str}`)
+export const removeTrailingSlash = (path) => removeTrailingChar(path, '/')
 
 /**
  * Joins several string chunks with the first argument the function is called with.
@@ -29,9 +36,9 @@ exports.removeTrailingSlash = (path) => this.removeTrailingChar(path, '/')
  * @param {...string} args string chunks to be joined
  * @return {string}
  */
-exports.mergeStrings = (sep, ...args) => {
+export function mergeStrings(sep, ...args) {
   const argNb = args.length
-  if (argNb == 0 || args[0] === undefined || args[0] === null) return ''
+  if (argNb === 0 || args[0] === undefined || args[0] === null) return ''
   let accumulatedStr = `${args[0]}`
   for (let i = 1; i < argNb; i++) {
     if (args[i] === undefined || args[i] === null) break
@@ -42,15 +49,21 @@ exports.mergeStrings = (sep, ...args) => {
   return accumulatedStr
 }
 
-exports.pathJoin = (...args) => this.mergeStrings('/', ...args)
+export const pathJoin = (...args) => mergeStrings('/', ...args)
+export const lastElementOfArray = (anArray) => anArray.slice(-1)[0]
+export const getFileExtension = (fileName) => lastElementOfArray(`${fileName}`.split('.'))
 
-// ---- String encodings
-exports.toBase64 = (data) => this.convertEncoding(data, 'utf-8', 'base64')
-exports.toBase64url = (str) => this.convertEncoding(str, 'utf-8', 'base64url')
-exports.decodeBase64 = (data) => this.convertEncoding(data, 'base64', 'utf-8')
-exports.decodeBase64url = (data) => this.convertEncoding(data, 'base64url', 'utf-8')
+// -------------------------------------------------------------------------------------------------
+// Strings encoding
+// -------------------------------------------------------------------------------------------------
+export const toBase64 = (data) => convertEncoding(data, 'utf-8', 'base64')
+export const toBase64url = (str) => convertEncoding(str, 'utf-8', 'base64url')
+export const decodeBase64 = (data) => convertEncoding(data, 'base64', 'utf-8')
+export const decodeBase64url = (data) => convertEncoding(data, 'base64url', 'utf-8')
+export const encodeBase64 = (data) => convertEncoding(data, 'utf-8', 'base64')
+export const encodeBase64url = (data) => convertEncoding(data, 'utf-8', 'base64url')
 
-exports.convertEncoding = (data, fromEncoding, toEncoding) => {
+export function convertEncoding(data, fromEncoding, toEncoding) {
   try {
     const dataStr = data
     return Buffer.from(dataStr, fromEncoding).toString(toEncoding)
@@ -59,11 +72,14 @@ exports.convertEncoding = (data, fromEncoding, toEncoding) => {
   }
 }
 
-exports.toInt = (str) => {
+export function toInt(str) {
   const i = parseInt(str, 10)
   return Number.isNaN(i) || `${i}` !== str ? str : i
 }
 
+// -------------------------------------------------------------------------------------------------
+// Custom JSON stringify
+// -------------------------------------------------------------------------------------------------
 /**
  * Custom JSON beautifying function
  * @param {JSON} jsonObject: a JSON object
@@ -71,7 +87,7 @@ exports.toInt = (str) => {
  *                                    to display the JSON on several lines
  * @returns {String} JSON.stringify options
  */
-exports.beautify = (jsonObject, option) => {
+export function beautify(jsonObject, option) {
   try {
     return `${JSON.stringify(jsonObject, null, option).replace(/\\"/g, '"')}${option != null ? '\n' : ''}`
   } catch {
@@ -79,43 +95,48 @@ exports.beautify = (jsonObject, option) => {
   }
 }
 
-exports.jsonToString = (jsonObject) => inspect(jsonObject, false, 5, true)
+export const jsonToString = (jsonObject) => inspect(jsonObject, false, 5, true)
 
+// -------------------------------------------------------------------------------------------------
+// HTTP
+// -------------------------------------------------------------------------------------------------
 /**
  * Cleans a headers string from the "Autorization: <whatever>" information
  */
-exports.cleanErrMsg = (str) => (str ? this.cleanHeadersAuth(str) : '')
-exports.cleanHeadersAuth = (str) =>
-  typeof str == 'string'
-    ? str.replace(/["'](Bearer|Basic) [\w-/.]+["']/g, '"***"')
-    : this.cleanHeadersAuth(this.beautify(str))
+export const cleanErrMsg = (str) => (str ? cleanHeadersAuth(str) : '')
+export const cleanHeadersAuth = (str) =>
+  typeof str == 'string' ? str.replace(/["'](Bearer|Basic) [\w-/.]+["']/g, '"***"') : cleanHeadersAuth(beautify(str))
 
-exports.makeRequestable = (func) => async (req, reply, next) => {
-  try {
-    reply.status(200).send(await func())
-  } catch (err) {
-    console.warn('makeRequestable', 'ERR', this.cleanErrMsg(err))
-    if (typeof err == 'object' && err.message && err.statusCode && err.error)
-      return reply
-        .status(err.statusCode || 500)
-        .json({ statusCode: err.statusCode, error: err.error, message: err.message })
-    if (typeof err.message == 'string')
-      return reply.status(err.statusCode || 500).json({ statusCode: err.statusCode || 500, message: err.message })
-    reply.status(500).json({ statusCode: 500, message: this.cleanErrMsg(err) })
+export function makeRequestable(func) {
+  return async (req, reply, next) => {
+    try {
+      reply.status(200).send(await func())
+    } catch (err) {
+      console.warn('makeRequestable', 'ERR', cleanErrMsg(err))
+      if (typeof err == 'object' && err.message && err.statusCode && err.error)
+        return reply
+          .status(err.statusCode || 500)
+          .json({ statusCode: err.statusCode, error: err.error, message: err.message })
+      if (typeof err.message == 'string')
+        return reply.status(err.statusCode || 500).json({ statusCode: err.statusCode || 500, message: err.message })
+      reply.status(500).json({ statusCode: 500, message: cleanErrMsg(err) })
+    }
   }
 }
 
-exports.getDomain = (url) => {
+export function getDomain(url) {
+  if (!url) return
   if (!url.startsWith('http')) url = 'http://' + url
-  return this.checkIsURL(url)?.hostname
+  return checkIsURL(url)?.hostname
 }
 
-exports.getHost = (url) => {
+export function getHost(url) {
+  if (!url) return
   if (!url.startsWith('http')) url = 'http://' + url
-  return this.checkIsURL(url)?.host
+  return checkIsURL(url)?.host
 }
 
-exports.checkIsURL = (url) => {
+export function checkIsURL(url) {
   try {
     return new URL(url)
   } catch {
@@ -123,7 +144,7 @@ exports.checkIsURL = (url) => {
   }
 }
 
-exports.uuidv4 = (nb) => {
+export function uuidv4(nb) {
   if (!nb) return v4()
   if (!isInteger(parseInt(nb))) throw new Error('Input parameter should be an integer')
   const uuidArray = []
@@ -133,4 +154,65 @@ exports.uuidv4 = (nb) => {
   return uuidArray
 }
 
-exports.sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// -------------------------------------------------------------------------------------------------
+// Files
+// -------------------------------------------------------------------------------------------------
+// export const moduleDirname = (place = import.meta.url) => dirname(fileURLToPath(place))
+
+/**
+ * Gives the folder of the application
+ */
+const ROOT = process.cwd()
+export const getRootDir = () => ROOT
+export const getRoot = (...path) => pathJoin(ROOT, ...path)
+
+/**
+ * Gives the folder where the libraries are installed
+ */
+export const getNodeModulesDir = () => {
+  const nm = 'node_modules'
+  const root = getRootDir()
+
+  let libsPath = process.env.NODE_PATH
+  if (libsPath?.endsWith(nm)) return libsPath
+  if (!libsPath) {
+    try {
+      libsPath = execSync('npm root', { encoding: 'utf-8' })
+      if (libsPath.endsWith('\n')) libsPath = libsPath.slice(0, -1)
+      console.debug('LIBS_PATH:', libsPath)
+      return libsPath
+    } catch {
+      for (const lookupFolderLevel of ['', '..', '../..']) {
+        libsPath = pathJoin(root, lookupFolderLevel, nm)
+        if (existsSync(libsPath)) {
+          console.debug('LIBS_PATH:', libsPath)
+          return libsPath
+        }
+      }
+    }
+    console.debug('LIBS_PATH:', libsPath)
+  }
+  return root
+}
+const NODE_MODULES = getNodeModulesDir()
+export const getLib = (...path) => pathJoin(NODE_MODULES, ...path)
+
+/**
+ * Recursively list all files in a folder
+ */
+export const getAllFiles = (folder, { extensionFilter = ['*'], excludeFolders = [] }, arrayOfFiles = []) => {
+  const files = readdirSync(folder)
+  files.forEach((fileName) => {
+    const filePath = pathJoin(folder, fileName)
+    if (statSync(filePath).isDirectory()) {
+      if (!excludeFolders.includes(fileName))
+        arrayOfFiles = getAllFiles(filePath, { extensionFilter, excludeFolders }, arrayOfFiles)
+    } else {
+      if (extensionFilter[0] === '*' || extensionFilter.includes(getFileExtension(fileName)))
+        arrayOfFiles.push(normalize(filePath))
+    }
+  })
+  return arrayOfFiles
+}

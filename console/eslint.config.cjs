@@ -1,39 +1,31 @@
-import globals from 'globals'
+/* eslint-disable no-undef */
+const globals = require('globals')
 
-import babelParser from '@babel/eslint-parser'
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
-import unusedImports from 'eslint-plugin-unused-imports'
+const js = require('@eslint/js')
+const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended')
+const unusedImports = require('eslint-plugin-unused-imports')
 
-export default [
+module.exports = [
+  js.configs.recommended,
   {
-    ignores: [
-      '**/node_modules/',
-      'front/**',
-      'console/**',
-      '**/.ssh/',
-      '**/.env/',
-      '**/tests/',
-      '**/coverage/',
-      '**/*.spec.js',
-      '**/*.test.js',
-    ],
+    ignores: ['**/node_modules/**', '**/tests/**', '**/*.pub', 'cypress/**', 'dev/**'],
     languageOptions: {
-      globals: { ...globals.node },
+      globals: { ...globals.browser, require: true, process: true },
       ecmaVersion: 'latest',
-      parser: babelParser,
-      parserOptions: {
-        requireConfigFile: false,
-        presets: [['@babel/preset-env', { shippedProposals: true, targets: { node: 'current' } }]],
-      },
     },
     rules: {
       'arrow-body-style': 'off',
       'comma-dangle': ['error', 'only-multiline'],
       complexity: ['warn', { max: 20 }],
-      eqeqeq: ['error', 'smart'],
+      'cypress/no-assigning-return-values': 'error',
+      'cypress/no-unnecessary-waiting': 'error',
+      'cypress/assertion-before-screenshot': 'warn',
+      'cypress/no-force': 'warn',
+      'cypress/no-async-tests': 'error',
+      'cypress/no-pause': 'error',
       indent: 'off',
       'no-await-in-loop': 'error',
-      'no-console': 'warn',
+      'no-console': 'off',
       'no-dupe-keys': 'error',
       'no-empty': 'error',
       'no-extend-native': ['error', { exceptions: ['RegExp'] }],
@@ -59,7 +51,7 @@ export default [
         },
       ],
     },
-    plugins: { 'unused-imports': unusedImports },
+    plugins: { 'unused-imports': unusedImports, cypress },
   },
   eslintPluginPrettierRecommended,
 ]

@@ -1,10 +1,10 @@
 import axios from 'axios'
 
 import PropTypes from 'prop-types'
-import React, { useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { Trash } from 'react-bootstrap-icons'
 
-import { getApiData } from '../../utils/frontOptions'
+import { BackConfContext } from '../../context/backConfContext.js'
 import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
 import { lastMonth } from '../../utils/utils'
 import { getOptConfirm, getOptOk, useModalContext } from '../modals/genericModalContext'
@@ -15,22 +15,27 @@ CatalogueReports.propTypes = {
   logout: PropTypes.func,
 }
 
-const getApiUrlReports = (suffix) => getApiData('reports', suffix)
-
 /**
  * Composant : CatalogueReports
  * @return {void}
  */
 export default function CatalogueReports({ editMode, logout }) {
+  const { backConf } = useContext(BackConfContext)
   const { defaultErrorHandler } = useDefaultErrorHandler()
+
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
+
   const { changeOptions, toggle } = useModalContext()
   const [refreshState, setRefreshState] = useState(editMode)
+
   /**
    * call for confirmation before object deletion
    */
-  const deleteOldReports = () => {
+  const deleteOldReports = () =>
+    back?.isLoaded &&
     axios
-      .delete(getApiUrlReports(`?submitted_before=${lastMonth().toISOString()}`))
+      .delete(back.getBackCatalog('reports', `?submitted_before=${lastMonth().toISOString()}`))
       .then((res) => {
         const deletedCount = res?.data?.deletedCount
         const msg = !deletedCount
@@ -43,7 +48,6 @@ export default function CatalogueReports({ editMode, logout }) {
         setRefreshState(!refreshState)
       })
       .catch((err) => (err.response?.status == 401 ? logout() : defaultErrorHandler(err)))
-  }
 
   /**
    * call for confirmation before organization deletion

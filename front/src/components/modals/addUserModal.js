@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import PropTypes from 'prop-types'
-import React, { useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 
 import Button from 'react-bootstrap/Button'
 import Col from 'react-bootstrap/Col'
@@ -10,16 +10,18 @@ import InputGroup from 'react-bootstrap/InputGroup'
 import Modal from 'react-bootstrap/Modal'
 import Row from 'react-bootstrap/Row'
 
-import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
-import { VALID_EMAIL, VALID_NOT_EMPTY_USERNAME } from './validation'
+import { BackConfContext } from '../../context/backConfContext.js'
+import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler.js'
+import { VALID_EMAIL, VALID_NOT_EMPTY_USERNAME } from './validation.js'
 
-const urlUser = 'api/secu/users'
-const modalTitle = 'Ajouter un nouvel utilisateur'
-const modalSubmitBtnTxt = 'Sauver'
-
-const validation = {
-  username: [VALID_NOT_EMPTY_USERNAME],
-  email: [VALID_EMAIL],
+export const useAddUserModal = () => {
+  const [isVisibleAddModal, setIsVisibleAddModal] = useState(false)
+  /**
+   * toggle l'affichage de la modal
+   * @return {void}
+   */
+  const toggleAddModal = () => setIsVisibleAddModal(!isVisibleAddModal)
+  return { isVisibleAddModal, toggleAddModal }
 }
 
 AddUserModal.propTypes = {
@@ -36,13 +38,23 @@ AddUserModal.propTypes = {
  */
 export default function AddUserModal({ roleList, visible, toggleEdit, refresh }) {
   const { defaultErrorHandler } = useDefaultErrorHandler()
+
+  const { backConf } = useContext(BackConfContext)
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
+
   const [userInfo, setUserInfo] = useState({})
 
+  const modalTitle = 'Ajouter un nouvel utilisateur'
+  const modalSubmitBtnTxt = 'Sauver'
+
+  const validation = {
+    username: [VALID_NOT_EMPTY_USERNAME],
+    email: [VALID_EMAIL],
+  }
+
   const hasErrors = (prop, val) => {
-    if (!userInfo) {
-      // console.error('T (hasErrors) No userInfo')
-      return true
-    }
+    if (!userInfo) return true
     if (!val) val = userInfo[prop]
     if (prop === 'roles') {
       return !(Array.isArray(val) && val.length > 0) ? 'Au moins un rôle doit être défini' : false
@@ -54,7 +66,7 @@ export default function AddUserModal({ roleList, visible, toggleEdit, refresh })
     }
     let isInvalid
     validation[prop]?.map((valid) => {
-      if (!`${val}`.match(valid[0])) isInvalid = valid[1].replace('{VALUE}', val)
+      if (!RegExp(valid[0]).exec(`${val}`)) isInvalid = valid[1].replace('{VALUE}', val)
     })
     return isInvalid
   }
@@ -117,20 +129,9 @@ export default function AddUserModal({ roleList, visible, toggleEdit, refresh })
    * @param {*} role role
    * @param {*} user utilisateur
    */
-  const sendUserInfo = async () => {
-    try {
-      if (!userInfo) {
-        console.error('T (sendUserInfo) No user info!')
-        return
-      }
-      await axios.post(`${urlUser}`, userInfo)
-      // console.trace('T (add.sendingUserInfo)', userInfo)
-      // const res = await axios.post(`${urlUser}`, userInfo)
-      // console.trace('T (add.sendUserInfo)', res.data)
-    } catch (err) {
-      defaultErrorHandler(err)
-    }
-  }
+  const sendUserInfo = () =>
+    (!userInfo && console.error('T (sendUserInfo) No user info!')) ||
+    (back?.isLoaded && axios.post(back.getBackSecu('users'), userInfo).catch((err) => defaultErrorHandler(err)))
 
   return (
     <Modal show={visible} onHide={toggleEdit} animation={false}>
@@ -211,14 +212,4 @@ export default function AddUserModal({ roleList, visible, toggleEdit, refresh })
       </Form>
     </Modal>
   )
-}
-
-export const useAddUserModal = () => {
-  const [isVisibleAddModal, setIsVisibleAddModal] = useState(false)
-  /**
-   * toggle l'affichage de la modal
-   * @return {void}
-   */
-  const toggleAddModal = () => setIsVisibleAddModal(!isVisibleAddModal)
-  return { isVisibleAddModal, toggleAddModal }
 }

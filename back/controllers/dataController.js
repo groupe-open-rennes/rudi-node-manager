@@ -1,15 +1,29 @@
 const mod = 'callApiSimple'
 
+// -------------------------------------------------------------------------------------------------
+// External dependencies
+// -------------------------------------------------------------------------------------------------
+import axios from 'axios'
+
+// -------------------------------------------------------------------------------------------------
 // Internal dependencies
-const { default: axios } = require('axios')
+// -------------------------------------------------------------------------------------------------
+import {
+  CATALOG,
+  getBackPath,
+  getCatalogAdminPath,
+  getCatalogUrlAndParams,
+  getConsolePath,
+  getFrontPath,
+  getHostDomain,
+  getManagerPath,
+} from '../config/config.js'
 
-const { getCatalogAdminPath, getCatalogUrlAndParams, FORM_PREFIX, CATALOG } = require('../config/config')
+import { getTags } from '../config/backOptions.js'
 
-const { getTags } = require('../config/backOptions')
-
-const { handleError, treatAxiosError } = require('./errorHandler')
-const { getCatalogHeaders } = require('../utils/secu.js')
-const { getStoragePublicUrl } = require('./mediaController.js')
+import { getCatalogHeaders } from '../utils/secu.js'
+import { handleError, treatAxiosError } from './errorHandler.js'
+import { getStoragePublicUrl } from './mediaController.js'
 
 let cache = {}
 // Helper functions
@@ -38,49 +52,45 @@ const callCatalog = async (url, req, reply) => {
   } catch (err) {
     // log.w(mod, fun, cleanErrMsg(err))
     // if (reply) reply.status(err.statusCode).send(err.message)
-    treatAxiosError(err, CATALOG, req, reply)
+    return treatAxiosError(err, CATALOG, req, reply)
   }
 }
 
 // Controllers
-exports.getVersion = (req, reply) => callCatalog('/api/version', req, reply)
-exports.getEnum = (req, reply) => {
+export const getCatalogVersion = (req, reply) => callCatalog(getCatalogAdminPath('version'), req, reply)
+export function getEnum(req, reply) {
   const lang = req.params?.lang || req.query?.lang || 'fr'
   return callCatalog(getCatalogAdminPath(`enum?lang=${lang}`), req, reply)
 }
-exports.getLicences = (req, reply) => callCatalog(getCatalogAdminPath('licences'), req, reply)
-
-exports.getThemeByLang = (req, reply) =>
-  callCatalog(getCatalogAdminPath('enum/themes', req.params?.lang || 'fr'), req, reply)
+export const getLicences = (req, reply) => callCatalog(getCatalogAdminPath('licences'), req, reply)
 
 const getThemes = (req, reply) => {
   const lang = req?.params?.lang || req?.query?.lang || 'fr'
   return callCatalog(getCatalogAdminPath('enum/themes', lang), req, reply)
 }
 
-exports.getThemeByLang = (req, reply) => getThemes(req, reply)
-exports.getCatalogPublicUrl = () => callCatalog(getCatalogAdminPath('check/node/url'))
-exports.getPortalUrl = () => callCatalog(getCatalogAdminPath('check/portal/url'))
+export const getThemeByLang = (req, reply) => getThemes(req, reply)
+export const getCatalogPublicUrl = () => callCatalog(getCatalogAdminPath('check/node/url'))
+export const getPortalUrl = () => callCatalog(getCatalogAdminPath('check/portal/url'))
 
-exports.getInitData = async (req, reply) => {
+export async function getInitData(req, reply) {
   try {
-    const data = await Promise.all([
-      getThemes(req),
-      this.getCatalogPublicUrl(),
-      getStoragePublicUrl(),
-      this.getPortalUrl(),
-    ])
+    const data = await Promise.all([getThemes(req), getCatalogPublicUrl(), getStoragePublicUrl(), getPortalUrl()])
     // console.log(data)
 
     const tags = getTags()
     const initData = {
       appTag: tags?.tag,
       gitHash: tags?.hash,
-      themeLabels: data[0],
-      apiExtUrl: data[1],
-      mediaExtUrl: data[2],
-      formUrl: FORM_PREFIX,
+      catalogPubUrl: data[1],
+      storagePubUrl: data[2],
+      consolePath: getConsolePath(),
+      frontPath: getFrontPath(),
+      backPath: getBackPath(),
+      managerPath: getManagerPath(),
+      hostUrl: getHostDomain(),
       portalConnected: !!data[3],
+      themeLabels: data[0],
     }
     return reply ? reply.status(200).json(initData) : initData
   } catch (e) {

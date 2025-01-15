@@ -1,6 +1,6 @@
 import axios from 'axios'
 import PropTypes from 'prop-types'
-import React, { useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 
 import { Eye, EyeSlash } from 'react-bootstrap-icons'
 import Button from 'react-bootstrap/Button'
@@ -8,6 +8,7 @@ import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
 import './login.css'
 
+import { BackConfContext } from '../../context/backConfContext.js'
 import GenericModal, { useGenericModal, useGenericModalOptions } from '../modals/genericModal'
 
 export const btnColor = 'secondary'
@@ -32,6 +33,11 @@ ChangePwd.propTypes = {
  * @return {ReactNode} Register html component
  */
 export default function ChangePwd({ backToLogin }) {
+  const { backConf } = useContext(BackConfContext)
+
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
+
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -62,7 +68,8 @@ export default function ChangePwd({ backToLogin }) {
    * @return {Promise} Register promise
    */
   const putPassword = (credentials) =>
-    axios.put(`api/front/change-password`, JSON.stringify(credentials), {
+    back?.isLoaded &&
+    axios.put(back.getBackFront('change-password'), JSON.stringify(credentials), {
       headers: { 'Content-Type': 'application/json' },
     })
 

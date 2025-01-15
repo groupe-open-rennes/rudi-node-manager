@@ -4,8 +4,7 @@ import PropTypes from 'prop-types'
 import React, { useContext, useEffect, useState } from 'react'
 import { Pencil, Plus, Trash } from 'react-bootstrap-icons'
 
-import { BackDataContext } from '../../context/backDataContext'
-import { getForm } from '../../utils/frontOptions.js'
+import { BackConfContext } from '../../context/backConfContext.js'
 import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
 import { ModalContext, getOptConfirm, getOptOk } from '../modals/genericModalContext'
 
@@ -40,14 +39,15 @@ export function ObjCard({
   deleteMsg,
   refresh,
 }) {
-  const { appInfo } = useContext(BackDataContext)
-  const { changeOptions, toggle } = useContext(ModalContext)
   const { defaultErrorHandler } = useDefaultErrorHandler()
 
-  const [formUrl, setFormUrl] = useState('')
-  useEffect(() => setFormUrl(appInfo?.formUrl || ''), [appInfo])
+  const { backConf } = useContext(BackConfContext)
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
 
-  const getFormObj = (obj, query) => getForm(formUrl, obj, query)
+  const { changeOptions, toggle } = useContext(ModalContext)
+
+  const getFormObj = (obj, query) => back?.isLoaded && back.getConsole(obj, query)
 
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
@@ -143,12 +143,13 @@ export function EditObjCard({
   deleteMsg,
   refresh,
 }) {
-  const { appInfo } = useContext(BackDataContext)
+  const { backConf } = useContext(BackConfContext)
   const { defaultErrorHandler } = useDefaultErrorHandler()
 
-  const [formUrl, setFormUrl] = useState('')
-  useEffect(() => setFormUrl(appInfo?.formUrl || ''), [appInfo])
-  const getFormObj = (obj, query) => getForm(formUrl, obj, query)
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
+
+  const getFormObj = (obj, query) => back?.isLoaded && back.getConsole(obj, query)
 
   const [editID, setEditID] = useState('')
   const { changeOptions, toggle } = useContext(ModalContext)

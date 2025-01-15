@@ -1,13 +1,14 @@
 import axios from 'axios'
 
 import PropTypes from 'prop-types'
-import React, { useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 
 import { Eye, EyeSlash } from 'react-bootstrap-icons'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
 
+import { BackConfContext } from '../../context/backConfContext.js'
 import GenericModal, { useGenericModal, useGenericModalOptions } from '../modals/genericModal'
 import './login.css'
 
@@ -33,7 +34,10 @@ Register.propTypes = {
  * @return {ReactNode} Register html component
  */
 export default function Register({ backToLogin }) {
-  // const { defaultErrorHandler } = useDefaultErrorHandler()
+  const { backConf } = useContext(BackConfContext)
+
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -59,7 +63,8 @@ export default function Register({ backToLogin }) {
    * @return {Promise} Register promise
    */
   const registerUser = (credentials) =>
-    axios.post(`api/front/register`, JSON.stringify(credentials), {
+    back?.isLoaded &&
+    axios.post(back.getBackFront('register'), JSON.stringify(credentials), {
       headers: { 'Content-Type': 'application/json' },
     })
 

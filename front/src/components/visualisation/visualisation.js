@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import PropTypes from 'prop-types'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { Check } from 'react-bootstrap-icons'
 import { useParams } from 'react-router-dom'
 
@@ -9,7 +9,7 @@ import { JsonViewer } from '@textea/json-viewer'
 import jspreadsheet from 'jspreadsheet-ce'
 import 'jspreadsheet-ce/dist/jspreadsheet.css'
 
-import { getApiMedia } from '../../utils/frontOptions.js'
+import { BackConfContext } from '../../context/backConfContext.js'
 import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
 
 Visualisation.propTypes = {
@@ -20,44 +20,35 @@ Visualisation.propTypes = {
  * @return {ReactNode}
  */
 function Visualisation({ logout }) {
+  const { backConf } = useContext(BackConfContext)
+
+  const [back, setBack] = useState(backConf)
+  useEffect(() => setBack(backConf), [backConf])
+
   const { defaultErrorHandler } = useDefaultErrorHandler()
 
   const { id } = useParams()
   const [mediaId, setMediaId] = useState(id || '')
   const [visuOption, setVisuOption] = useState({ displayType: 'TXT', data: '- Aucune donnée -' })
 
-  const wrapper = React.useRef()
+  const wrapper = useRef()
   const [el, setEl] = useState(null)
 
   useEffect(() => {
-    if (visuOption.displayType === 'CSV')
-      setEl(
-        jspreadsheet(wrapper.current, {
-          data: [[]],
-          minDimensions: [10, 10],
-        })
-      )
-    if (mediaId.length) {
-      handleOnClick()
-    }
+    if (visuOption.displayType === 'CSV') setEl(jspreadsheet(wrapper.current, { data: [[]], minDimensions: [10, 10] }))
+    if (mediaId.length) handleOnClick()
   }, [])
 
   useEffect(() => {
-    if (el) {
-      el.destroy(wrapper.current, false)
-    }
-    if (visuOption.displayType === 'CSV') {
-      setJSpreadsheet()
-    }
+    el?.destroy(wrapper.current, false)
+    if (visuOption.displayType === 'CSV') setJSpreadsheet()
   }, [visuOption])
 
   /**
    * met a jour le state lors de la modification de l'input du mediaId
    * @param {*} event event
    */
-  function handleChange(event) {
-    setMediaId(event.target.value)
-  }
+  const handleChange = (event) => setMediaId(event.target.value)
 
   /**
    * convert CSV string to array
@@ -118,7 +109,8 @@ function Visualisation({ logout }) {
   }
 
   const getMediaInfo = async (mediaId) => {
-    const resApi = await axios.get(getApiMedia(mediaId))
+    if (!back?.isLoaded) return
+    const resApi = await axios.get(back.getBackStorage(mediaId))
     const mediaInfo = resApi?.data
     // console.debug('T (visu) getMediaInfo', mediaInfo)
     if (!mediaInfo)
@@ -218,13 +210,12 @@ function Visualisation({ logout }) {
    * get the doc
    */
   async function handleOnClick() {
-    // First: let's get the media metadata from the "RUDI API" module
+    // First: let's get the media metadata from the "RUDI Catalog" module
     const { mediaUrl, mediaMime, mediaCharset } = await getMediaInfo(mediaId)
     try {
-      // Let's then get the media data from the "RUDI Media" module
+      // Let's then get the media data from the "RUDI Storage" module
       await showContent(mediaUrl, mediaMime, mediaCharset)
     } catch (err) {
-      // console.error('T (visu) getMediaInfo url:', getBackUrl(`api/media/${mediaId}`))
       if (err.msg === 'media uuid not found') {
         err.msg = `Aucun media n'a été trouvé pour l'id ${mediaId}`
         err.statusCode = 404
