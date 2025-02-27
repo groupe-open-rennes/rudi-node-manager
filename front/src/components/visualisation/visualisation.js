@@ -28,7 +28,7 @@ function Visualisation({ logout }) {
   const { defaultErrorHandler } = useDefaultErrorHandler()
 
   const { id } = useParams()
-  const [mediaId, setMediaId] = useState(id || '')
+  const [mediaId, setMediaId] = useState(id ?? '')
   const [visuOption, setVisuOption] = useState({ displayType: 'TXT', data: '- Aucune donnée -' })
 
   const wrapper = useRef()
@@ -36,7 +36,7 @@ function Visualisation({ logout }) {
 
   useEffect(() => {
     if (visuOption.displayType === 'CSV') setEl(jspreadsheet(wrapper.current, { data: [[]], minDimensions: [10, 10] }))
-    if (mediaId.length) handleOnClick()
+    if (mediaId?.length) handleOnClick()
   }, [])
 
   useEffect(() => {
@@ -124,7 +124,7 @@ function Visualisation({ logout }) {
     const mediaMime = mediaMimeElements[0].trim().toLowerCase()
     let mediaCharset
     if (mediaMimeElements.length > 1) {
-      mediaCharset = mediaMimeElements[1].trim().toLowerCase() || 'charset=utf-8'
+      mediaCharset = mediaMimeElements[1].trim().toLowerCase() ?? 'charset=utf-8'
       switch (mediaCharset) {
         case 'charset=utf-8':
         case 'charset=us-ascii':
@@ -132,10 +132,7 @@ function Visualisation({ logout }) {
         case 'charset=iso-8859-15':
           break
         default:
-          defaultErrorHandler({
-            message: `l'encodage ${mediaCharset} n'est pas supporté`,
-          })
-          break
+          return defaultErrorHandler({ message: `l'encodage ${mediaCharset} n'est pas supporté` })
       }
     }
     mediaCharset = mediaMimeStr
@@ -164,13 +161,14 @@ function Visualisation({ logout }) {
         </video>
       ))
     } else {
-      const media = await axios.get(mediaUrl)
-      if (!media)
+      const res = await axios.get(mediaUrl)
+      if (!res?.data)
         return defaultErrorHandler({
           statusCode: 404,
           message: `Aucun media n'a été trouvé à l'adresse ${mediaUrl}`,
         })
-      // console.log(media)
+      const media = res.data
+      console.log(media)
       switch (mediaMime) {
         case 'application/geo+json':
         case 'application/json':
@@ -188,21 +186,18 @@ function Visualisation({ logout }) {
         case 'text/css':
         case 'text/markdown':
         case 'text/x-markdown':
-          if (!media.data)
+          if (!media)
             return defaultErrorHandler({
               statusCode: 404,
               message: `Le media n'a pu être récupéré à l'adresse ${mediaUrl}`,
             })
           return setHtmlSrc(
             <div className="body text-visu">
-              <pre>{media.data}</pre>
+              <pre>{media}</pre>
             </div>
           )
-
         default:
-          defaultErrorHandler({
-            message: `la visualisation des fichiers de type ${mediaMime} n'est pas supportée`,
-          })
+          defaultErrorHandler({ message: `la visualisation des fichiers de type ${mediaMime} n'est pas supportée` })
       }
     }
   }
@@ -211,13 +206,20 @@ function Visualisation({ logout }) {
    */
   async function handleOnClick() {
     // First: let's get the media metadata from the "RUDI Catalog" module
-    const { mediaUrl, mediaMime, mediaCharset } = await getMediaInfo(mediaId)
+    if (!mediaId) {
+      return defaultErrorHandler({ message: 'Un ID de media doit être renseigné avant de cliquer sur le bouton' })
+    }
+    const mediaInfo = await getMediaInfo(mediaId)
+    if (!mediaInfo)
+      return defaultErrorHandler({ message: `Aucun media n'a été trouvé pour l'id ${mediaId}`, statusCode: 404 })
+
+    const { mediaUrl, mediaMime, mediaCharset } = mediaInfo
     try {
       // Let's then get the media data from the "RUDI Storage" module
       await showContent(mediaUrl, mediaMime, mediaCharset)
     } catch (err) {
       if (err.msg === 'media uuid not found') {
-        err.msg = `Aucun media n'a été trouvé pour l'id ${mediaId}`
+        err.message = `Aucun media n'a été trouvé pour l'id ${mediaId}`
         err.statusCode = 404
       } else if (!err.statusCode) err.statusCode = 500
       if (err.response?.status == 401) logout()

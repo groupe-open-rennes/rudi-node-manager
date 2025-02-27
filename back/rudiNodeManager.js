@@ -16,11 +16,16 @@ import helmet from 'helmet'
 import {
   getBackendListeningAddress,
   getBackendListeningPort,
-  getBackPath,
   getConf,
-  getConsolePath,
-  getFrontPath,
-  getManagerPath,
+  getDirectBack,
+  getDirectConsole,
+  getDirectFront,
+  getPublicFront,
+  getPublicManager,
+  getRouterBack,
+  getRouterConsole,
+  getRouterFront,
+  getRouterPath,
 } from './config/config.js'
 
 import { getBackOptions, isDevEnv, isProdEnv, OPT_BACK_PATH } from './config/backOptions.js'
@@ -47,7 +52,16 @@ import { dbInitialize, ROLE_ADMIN, ROLE_ALL } from './database/scripts/initDatab
 import { ConnectionError } from './utils/errors.js'
 import { passportAuthenticate, passportInitialize } from './utils/passportSetup.js'
 import { checkRolePerm } from './utils/roleCheck.js'
-import { getAllFiles, getDomain, getFileExtension, getHost, getRootDir, pathJoin, sleep } from './utils/utils.js'
+import {
+  getAllFiles,
+  getDomain,
+  getFileExtension,
+  getHost,
+  getRootDir,
+  pathJoin,
+  removeTrailingSlash,
+  sleep,
+} from './utils/utils.js'
 
 // -------------------------------------------------------------------------------------------------
 // Check RUDI modules state
@@ -110,40 +124,85 @@ const redirectTrailingSlashes = (req, reply, next) => {
 }
 
 function getHelmetDirectives({ catalogUrl, storageUrl }) {
-  const fun = 'getHelmetDirectives'
+  const fun = 'helmet'
   const backUrl = getBackOptions(OPT_BACK_PATH)
 
-  const trustedUrls = backUrl ? [backUrl, catalogUrl, storageUrl] : [catalogUrl, storageUrl]
   const moduleDomains = ["'self'"]
   const moduleHosts = ["'self'"]
+
+  const trustedDomains = getConf('security', 'trusted_domain') ?? []
+  const trustedUrls = [catalogUrl, storageUrl, ...trustedDomains]
+  if (backUrl) trustedUrls.push(backUrl)
+
   for (const url of trustedUrls) {
     if (url) {
       const domain = getDomain(url)
       const host = getHost(url)
-      // log.d(mod, fun + '.domains', `${url} -> ${domain}`)
+      // logD(mod, fun + '.domains', `${url} -> ${domain}`)
       if (!moduleHosts.includes(host)) moduleHosts.push(host)
       if (!moduleDomains.includes(domain)) moduleDomains.push(domain)
+      for (const locals of [
+        ['localhost', '127.0.0.1'],
+        ['127.0.0.1', 'localhost'],
+      ])
+        if (domain.startsWith(locals[0])) {
+          const altDomain = domain.replace(locals[0], locals[1])
+          if (!moduleDomains.includes(altDomain)) moduleDomains.push(altDomain)
+        }
     }
   }
-  // log.d(mod, fun + '.domains', `rudi module Domains: ${moduleDomains}`)
 
   /* Note about Content Security Policy:
    * - connect-src, media-src, worker-src: Allow full hosts (including ports).
    * - script-src, img-src, style-src, font-src: Only accept hostnames (domains); ports are not allowed.
    */
-  const connectSrc = [...moduleHosts, ...getConf('security', 'trusted_domain')]
-  logD(mod, fun, 'trustedUrls:', trustedUrls)
+  const connectSrc = moduleHosts
   const scriptSrc = moduleDomains
   const imgSrc = ['data:', ...moduleDomains, 'https://*.tile.osm.org']
-  const defaultSrc = [...moduleDomains]
+  const defaultSrc = moduleDomains
 
   const styleSrc = [...moduleDomains, "'unsafe-inline'"]
   const objectSrc = ["'none'"]
   const helmetDirectives = { scriptSrc, connectSrc, imgSrc, styleSrc, objectSrc, defaultSrc }
   if (!isProdEnv()) helmetDirectives.upgradeInsecureRequests = null
+
+  logD(mod, fun, `Trusted domains (script-src, img-src, style-src, font-src): ${moduleDomains}`)
+  logD(mod, fun, `Trusted hosts (connect-src, media-src, worker-src): ${moduleDomains}`)
+
   return helmetDirectives
 }
 
+// -------------------------------------------------------------------------------------------------
+// Launching express app
+// -------------------------------------------------------------------------------------------------
+
+// This is the dummy PUBLIC_URL the front has been built with
+const STATIC_FRONT_BUILD_URL = 'http://68064ef1-1e5c-4384-8c50-626f52b78c5c'
+
+// MIME types from the files to be modified
+const MIME_TYPES = { js: 'application/javascript', css: 'text/css', html: 'text/html', json: 'application/json' }
+
+const modifystaticFiles = (frontDir) => {
+  const here = 'modifystaticFiles'
+
+  // Special treatment: some frontend static files are be parsed (because they cannot be dynamically updated)
+  // The above STATIC_FRONT_BUILD_URL will be replaced with the right URL
+  const filesToParse = getAllFiles(frontDir, { extensionFilter: ['json', 'html', 'css', 'js'] })
+
+  const modifiedStaticFiles = {}
+  logD(mod, 'serve', `replacing in files ${STATIC_FRONT_BUILD_URL} -> ${getPublicFront()}`)
+  filesToParse.forEach((filePath) => {
+    const fileContent = readFileSync(filePath, 'utf-8')
+    const content = fileContent.replaceAll(STATIC_FRONT_BUILD_URL, removeTrailingSlash(getPublicFront()))
+    const fileExtension = getFileExtension(filePath)
+    const mime = MIME_TYPES[fileExtension]
+    const fileCall = filePath.split('front/build')[1]
+    modifiedStaticFiles[fileCall] = { content, mime }
+    logD(mod, here, 'modifed file:', fileCall)
+  })
+
+  return modifiedStaticFiles
+}
 // -------------------------------------------------------------------------------------------------
 // Launching express app
 // -------------------------------------------------------------------------------------------------
@@ -163,7 +222,7 @@ const launchManagerRouter = async ({ catalogUrl, storageUrl }) => {
     })
   )
 
-  // Note: bodyParser middleware has been replace with express bodyParser
+  // Note: bodyParser middleware has been replaced with express bodyParser
   managerApp.use(express.json())
   managerApp.use(express.urlencoded({ extended: true }))
   managerApp.use(cookieParser())
@@ -229,78 +288,81 @@ const launchManagerRouter = async ({ catalogUrl, storageUrl }) => {
   // -----------------------------------------------------------------------------------------------
   // Backend routes
   // -----------------------------------------------------------------------------------------------
-  managerApp.use(getBackPath('open'), openApi)
-  managerApp.use(getBackPath('front'), frontApi)
-  managerApp.use(getBackPath('catalog'), authenticate, checkRolePerm([ROLE_ALL]), catalogApi)
-  managerApp.use(getBackPath('data'), authenticate, checkRolePerm([ROLE_ALL]), catalogApi) // Legacy
-  managerApp.use(getBackPath('storage'), authenticate, checkRolePerm([ROLE_ALL]), storageApi)
-  managerApp.use(getBackPath('media'), authenticate, checkRolePerm([ROLE_ALL]), storageApi) // Legacy
-  managerApp.use(getBackPath('secu'), authenticate, checkRolePerm([ROLE_ADMIN]), secuApi)
+  managerApp.use(getRouterBack('open'), openApi)
+  managerApp.use(getRouterBack('front'), frontApi)
+  managerApp.use(getRouterBack('catalog'), authenticate, checkRolePerm([ROLE_ALL]), catalogApi)
+  managerApp.use(getRouterBack('data'), authenticate, checkRolePerm([ROLE_ALL]), catalogApi) // Legacy
+  managerApp.use(getRouterBack('storage'), authenticate, checkRolePerm([ROLE_ALL]), storageApi)
+  managerApp.use(getRouterBack('media'), authenticate, checkRolePerm([ROLE_ALL]), storageApi) // Legacy
+  managerApp.use(getRouterBack('secu'), authenticate, checkRolePerm([ROLE_ADMIN]), secuApi)
+
+  // For config where the router prefix is removed
+  managerApp.use(getDirectBack('open'), openApi)
+  managerApp.use(getDirectBack('front'), frontApi)
+  managerApp.use(getDirectBack('catalog'), authenticate, checkRolePerm([ROLE_ALL]), catalogApi)
+  managerApp.use(getDirectBack('data'), authenticate, checkRolePerm([ROLE_ALL]), catalogApi) // Legacy
+  managerApp.use(getDirectBack('storage'), authenticate, checkRolePerm([ROLE_ALL]), storageApi)
+  managerApp.use(getDirectBack('media'), authenticate, checkRolePerm([ROLE_ALL]), storageApi) // Legacy
+  managerApp.use(getDirectBack('secu'), authenticate, checkRolePerm([ROLE_ADMIN]), secuApi)
 
   // -----------------------------------------------------------------------------------------------
   // Serving the console frontend                                                                 !!
   // -----------------------------------------------------------------------------------------------
-  managerApp.use(getConsolePath(), authenticate, consoleRouter)
+  managerApp.use(getRouterConsole(), authenticate, consoleRouter)
+  managerApp.use(getDirectConsole(), authenticate, consoleRouter)
 
   // -----------------------------------------------------------------------------------------------
   // Serving the React frontend                                                                   !!
   // -----------------------------------------------------------------------------------------------
   // This middleware informs the express application to serve our compiled React files
-  // if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
 
   if (!isDevEnv()) {
     const trace = 'route front'
-    logI(mod, 'serve', `Serving the built static page on ${getFrontPath()}`)
+    logI(mod, 'serve', `Serving the built static page on ${getPublicFront()}`)
     const __dirname = getRootDir()
     const frontDir = pathJoin(__dirname, 'front/build')
     // Access the favicon
     managerApp.use(/.*favicon.ico/, express.static(pathJoin(frontDir, 'favicon.ico')))
 
-    // Special treatment: some frontend static files should be parsed (because they cannot be dynamically updated)
-    const filesToParse = getAllFiles(frontDir, { extensionFilter: ['json', 'html', 'css', 'js'] })
-    const mimeTypes = { js: 'application/javascript', css: 'text/css', html: 'text/html', json: 'application/json' }
-    const modifiedStaticFiles = {}
-    filesToParse.forEach((filePath) => {
-      const fileContent = readFileSync(filePath, 'utf-8')
-      const content = fileContent.replaceAll('http://f7689a5a-0ed6-4f4b-97da-df690903ef4f', getFrontPath())
-      const fileExtension = getFileExtension(filePath)
-      const mime = mimeTypes[fileExtension]
-      const fileCall = filePath.split('front/build')[1]
-      modifiedStaticFiles[fileCall] = { content, mime }
-      logD(mod, here, 'modifed file:', fileCall)
-    })
+    const modifiedStaticFiles = modifystaticFiles(frontDir)
 
     // Serving modified static files
     for (const file in modifiedStaticFiles) {
-      managerApp.get(getFrontPath(file), (req, reply) => {
+      managerApp.get(getRouterFront(file), (req, reply) => {
         const fileInfo = modifiedStaticFiles[file]
-        logD(mod, trace, `Accessing modified static file '${file}' (${fileInfo.mime})`)
+        reply.contentType(fileInfo.mime).send(String(fileInfo.content))
+      })
+      managerApp.get(getDirectFront(file), (req, reply) => {
+        const fileInfo = modifiedStaticFiles[file]
+        // logD(mod, trace, `Accessing modified static file '${file}' (${fileInfo.mime})`)
         // reply.header('Content-Type', `${fileInfo.mime}`).send(String(fileInfo.content))
         reply.contentType(fileInfo.mime).send(String(fileInfo.content))
       })
     }
 
-    // Additionaly serving index.html for /
-    const homePage = modifiedStaticFiles['/index.html']
-    managerApp.get(getFrontPath(), (req, reply) => {
-      logD(mod, trace, `Manager Front accessed from ${req.url}`)
-      reply.send(homePage.content)
-    })
-    managerApp.get(getFrontPath(''), (req, reply) => {
-      logD(mod, trace, `Manager Front accessed from ${req.url}`)
-      reply.send(homePage.content)
-    })
+    // Additionaly serving index.html for "/" and ""
+    logD(mod, trace, `front path: ${getRouterFront('/')}`)
+    const homePageContent = modifiedStaticFiles['/index.html']?.content
+    const homePageMime = modifiedStaticFiles['/index.html']?.mime
+    const rootPaths = [
+      getRouterFront('/'),
+      getDirectFront('/'),
+      removeTrailingSlash(getRouterFront()),
+      removeTrailingSlash(getDirectFront()),
+    ]
+    for (const path of rootPaths)
+      managerApp.get(path, (req, reply) => {
+        logW(mod, trace, `Manager Front accessed from ${path} (original URL: ${req.url})`)
+        reply.contentType(homePageMime).send(homePageContent)
+      })
 
-    // Accessing the static ressources
-    managerApp.use(getFrontPath(), (req, res, next) => {
-      logD(mod, trace, `Accessing unmodified static file ${req.url}`)
-      express.static(frontDir)(req, res, next)
-    })
+    // Serving the static ressources
+    for (const path of rootPaths) managerApp.use(path, (req, res, next) => express.static(frontDir)(req, res, next))
 
     // Redirecting everything else to the React front
-    managerApp.get('*', (req, reply) => {
-      logW(mod, trace, `Redirecting this URL to /metadata: ${req.url}`)
-      reply.redirect(308, getFrontPath())
+    managerApp.get('/*', (req, reply) => {
+      logW(mod, trace, `Redirecting the following URL to the UI: ${req.url} -> ${getRouterFront('/')}`)
+      reply.redirect(308, getRouterFront('/'))
     })
   }
 
@@ -328,9 +390,10 @@ const launchManagerRouter = async ({ catalogUrl, storageUrl }) => {
   // -----------------------------------------------------------------------------------------------
   // Configure our server to listen on the port defiend by our port variable
   // -----------------------------------------------------------------------------------------------
-  const managerServer = managerApp.listen(listeningPort, listeningAddress, () =>
-    logI(mod, '', `Listening on: ${listeningAddress}:${listeningPort}${getManagerPath()}`)
-  )
+  const managerServer = managerApp.listen(listeningPort, listeningAddress, () => {
+    logI(mod, '', `Listening on: ${listeningAddress}:${listeningPort}${getPublicManager()}`)
+    logI(mod, '', `Routing on:   ${listeningAddress}:${listeningPort}${getRouterPath()}`)
+  })
   managerServer.on('error', (err) => console.error('This error was uncaught:', err))
 
   return managerServer
@@ -355,8 +418,8 @@ async function shutDown(managerServer, signal) {
 export async function runRudiManagerBackend() {
   const fun = 'runRudiManagerBackend'
   const [catalogUrl, storageUrl] = await connectToRudiModules(20)
-  logD(mod, fun, `catalogUrl: ${catalogUrl}`)
-  logD(mod, fun, `storageUrl: ${storageUrl}`)
+  logD(mod, fun, `Public URL defined in Catalog module: ${catalogUrl}`)
+  logD(mod, fun, `Public URL defined in Storage module: ${storageUrl}`)
   const managerServer = await launchManagerRouter({ catalogUrl, storageUrl })
 
   process.on('SIGINT', () => shutDown(managerServer, 'SIGINT'))

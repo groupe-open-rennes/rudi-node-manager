@@ -159,11 +159,10 @@ console.log('--------------------------------------------------------------')
  */
 export const getBackOptions = (opt, altValue) => {
   if (!opt) return BACK_OPTIONS
-  if (BACK_OPTIONS[opt] !== undefined) return BACK_OPTIONS[opt]
-  return altValue
+  return BACK_OPTIONS[opt] ?? altValue
 }
 
-export const getAppTag = () => getBackOptions(OPT_APP_TAG) || ''
+export const getAppTag = () => getBackOptions(OPT_APP_TAG, '')
 
 export function getHash() {
   let gitHash = getBackOptions(OPT_GIT_HASH)
@@ -192,7 +191,7 @@ export const isStageEnv = () => nodeEnv === 'staging'
 export const isProdEnv = () => nodeEnv === 'production'
 
 const BACK_PATH = getBackOptions(OPT_BACK_PATH)
-const BACK_DOMAIN = getDomain(BACK_PATH) || BACK_PATH
+const BACK_DOMAIN = getDomain(BACK_PATH)
 export const getOptBackPath = () => BACK_PATH
 export const getOptBackDomain = () => BACK_DOMAIN
 

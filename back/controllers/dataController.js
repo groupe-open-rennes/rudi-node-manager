@@ -10,13 +10,13 @@ import axios from 'axios'
 // -------------------------------------------------------------------------------------------------
 import {
   CATALOG,
-  getBackPath,
   getCatalogAdminPath,
   getCatalogUrlAndParams,
-  getConsolePath,
-  getFrontPath,
   getHostDomain,
-  getManagerPath,
+  getPublicBack,
+  getPublicConsole,
+  getPublicFront,
+  getPublicManager,
 } from '../config/config.js'
 
 import { getTags } from '../config/backOptions.js'
@@ -29,14 +29,14 @@ let cache = {}
 // Helper functions
 
 /**
- * This function makes a call to RUDI API module
+ * This function makes a call to RUDI node Catalog module
  * It surrounds the API call with a local cache retrieval and also can be use either in a request
  * context (if req/reply are fulfilled, it will directly reply), or as a secondary function the
  * result of which one would wish to further process.
  *
  * This should be used preferably for persistant data, such as server URLs, not resources list
  * (or you'll need to invalidate the cache when a PUT occurred)
- * @param {*} url The external (relative) URL you wish to call on RUDI API server
+ * @param {*} url The external (relative) URL you wish to call on RUDI node Catalog server
  * @param {*} req Original request
  * @param {*} reply Original reply object, that will be used to return a result if it's provided
  * @returns
@@ -59,13 +59,13 @@ const callCatalog = async (url, req, reply) => {
 // Controllers
 export const getCatalogVersion = (req, reply) => callCatalog(getCatalogAdminPath('version'), req, reply)
 export function getEnum(req, reply) {
-  const lang = req.params?.lang || req.query?.lang || 'fr'
+  const lang = req.params?.lang ?? req.query?.lang ?? 'fr'
   return callCatalog(getCatalogAdminPath(`enum?lang=${lang}`), req, reply)
 }
 export const getLicences = (req, reply) => callCatalog(getCatalogAdminPath('licences'), req, reply)
 
 const getThemes = (req, reply) => {
-  const lang = req?.params?.lang || req?.query?.lang || 'fr'
+  const lang = req?.params?.lang ?? req?.query?.lang ?? 'fr'
   return callCatalog(getCatalogAdminPath('enum/themes', lang), req, reply)
 }
 
@@ -84,10 +84,10 @@ export async function getInitData(req, reply) {
       gitHash: tags?.hash,
       catalogPubUrl: data[1],
       storagePubUrl: data[2],
-      consolePath: getConsolePath(),
-      frontPath: getFrontPath(),
-      backPath: getBackPath(),
-      managerPath: getManagerPath(),
+      consolePath: getPublicConsole(),
+      frontPath: getPublicFront(),
+      backPath: getPublicBack(),
+      managerPath: getPublicManager(),
       hostUrl: getHostDomain(),
       portalConnected: !!data[3],
       themeLabels: data[0],

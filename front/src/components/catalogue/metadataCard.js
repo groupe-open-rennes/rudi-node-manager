@@ -12,15 +12,19 @@ import { DefaultConfirmOption, DefaultOkOption, useModalContext } from '../modal
 import FileSizeDisplay from '../other/fileSizeDisplay'
 import ThemeDisplay from '../other/themeDisplay'
 
-const downloadButton = (url) => (
+const getDownloadButton = (url) => (
   <button type="button" className="btn btn-green button-margin">
     <a id="downloadMedia" title="Télécharger" href={url}>
       <CloudDownload />
     </a>
   </button>
 )
-
-const externalUrlButton = (url) => (
+const getShareButton = (url) => (
+  <a className="btn btn-success" title="Partager la métadonnée" href={url} target="_blank" rel="noopener noreferrer">
+    <Share />
+  </a>
+)
+const getExternalUrlButton = (url) => (
   <button type="button" className="btn btn-green margin-right">
     <a id="downloadMedia" title="Site externe" href={url}>
       <BoxArrowUpRight />
@@ -28,32 +32,27 @@ const externalUrlButton = (url) => (
   </button>
 )
 
-const eyeButton = (id) => (
+const getEyeButton = (id) => (
   <Link to={`/show/${id}`}>
     <span className="btn btn-green" title="Aperçu">
       <Eye />
     </span>
   </Link>
 )
-const shareButton = (url) => (
-  <a className="btn btn-success" title="Partager la métadonnée" href={url} target="_blank" rel="noopener noreferrer">
-    <Share />
-  </a>
-)
-const editButton = (url) => (
+const getEditButton = (url) => (
   <a className="btn btn-warning" href={url} title="Editer" target="_blank" rel="noopener noreferrer">
     <Pencil />
   </a>
 )
-const deleteButton = (triggerDelete) => (
+const getDeleteButton = (triggerDelete) => (
   <button type="button" className="btn btn-danger" title="Supprimer" onClick={() => triggerDelete()}>
     <Trash />
   </button>
 )
-const missButton = () => (
+const missButton = (
   <button type="button" className="btn btn-missing" title="Fichier manquant, à retransmettre">
-    {/* <CloudSlashFill /> */}
     <CloudSlash />
+    {/* <CloudSlashFill /> */}
     {/* <FileEarmarkExcel /> */}
     {/* <XLg /> */}
   </button>
@@ -115,6 +114,15 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
   const [back, setBack] = useState(backConf)
   useEffect(() => setBack(backConf), [backConf])
 
+  const [shareButton, setShareButton] = useState(getShareButton())
+  useEffect(
+    () =>
+      setShareButton(
+        getShareButton((back?.isLoaded && back.getCatalogPub('v1/resources', metadata.global_id)) || getShareButton())
+      ),
+    [back]
+  )
+
   const { changeOptions, toggle } = useModalContext()
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
@@ -131,12 +139,7 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
       .then((res) => {
         const options = DefaultOkOption
         options.text = [`La métadonnée ${res.data.resource_title} a été supprimée`]
-        options.buttons = [
-          {
-            text: 'Ok',
-            action: () => refresh(),
-          },
-        ]
+        options.buttons = [{ text: 'Ok', action: () => refresh() }]
         changeOptions(options)
         toggle()
       })
@@ -150,14 +153,8 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
     const options = DefaultConfirmOption
     options.text = [`Confirmez vous la suppression de la métadonnée ${metadata.resource_title}?`]
     options.buttons = [
-      {
-        text: 'Oui',
-        action: () => deleteRessource(),
-      },
-      {
-        text: 'Non',
-        action: () => {},
-      },
+      { text: 'Oui', action: () => deleteRessource() },
+      { text: 'Non', action: () => {} },
     ]
     changeOptions(options)
     toggle()
@@ -213,7 +210,7 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
   )
   const displayMissingMedia = (media) => (
     <div key={`${media.media_id}`}>
-      {missButton()}
+      {missButton}
       <span className="text-muted"> {media.media_name} </span>
     </div>
   )
@@ -223,12 +220,11 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
     media.file_storage_status === 'missing' ? displayMissingMedia(media) : displayAvailableMedia(media)
 
   const button = {
-    share: shareButton(back?.isLoaded && back.getCatalogPub('v1/resources', metadata.global_id)),
-    edit: editButton(getFormMeta(`update=${metadata.global_id}`)),
-    delete: deleteButton(triggerDeleteRessource),
-    download: (url) => downloadButton(url),
-    external: (url) => externalUrlButton(url),
-    visualize: (id) => eyeButton(id),
+    edit: getEditButton(getFormMeta(`update=${metadata.global_id}`)),
+    delete: getDeleteButton(triggerDeleteRessource),
+    download: (url) => getDownloadButton(url),
+    external: (url) => getExternalUrlButton(url),
+    visualize: (id) => getEyeButton(id),
   }
   return (
     <div className="col-12" key={metadata.global_id}>
@@ -241,13 +237,13 @@ export default function MetadataCard({ editMode, metadata, refresh, logout }) {
             <span className="align-pill-right">{displayMetadataStatus(metadata)}</span>
             {isEdit ? (
               <div className="btn-group" role="group">
-                {button.share}
+                {shareButton}
                 {button.edit}
                 {button.delete}
               </div>
             ) : (
               <div className="btn-group" role="group">
-                {button.share}
+                {shareButton}
               </div>
             )}
           </div>

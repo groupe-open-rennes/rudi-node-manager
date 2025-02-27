@@ -39,6 +39,7 @@ export default function App() {
   useEffect(() => setBack(backConf), [backConf])
 
   const [rootUrl, setRootUrl] = useState(window.location.pathname)
+
   useEffect(() => {
     if (!back.isLoaded) return
     console.debug('Setting root to', back.frontPath)
@@ -75,12 +76,13 @@ export default function App() {
    * @param {string} gitHash the abbreviated git hash
    * @return {ReactNode} the code to display the version tag (if defined)
    */
-  const displayVersion = () => (
-    <div id="displayTags">
-      <div className="appTag">{back?.appTag}</div>
-      <div className="gitTag">{back?.gitHash}</div>
-    </div>
-  )
+  const displayVersion = () =>
+    back?.isLoaded && (
+      <div id="displayTags">
+        <div className="appTag">{back.appTag}</div>
+        <div className="gitTag">{back.gitHash}</div>
+      </div>
+    )
 
   const [displayTags, setDisplayTags] = useState(displayVersion())
 
@@ -210,7 +212,7 @@ export default function App() {
           <Route path="show/:id" element={<Visualisation logout={logout} />} />
           <Route path="show" element={<Visualisation logout={logout} />} />
           <Route path="user" element={<CatalogueUser editMode={isAdmin} logout={logout} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate replace to="/" relative="path" />} />
         </Routes>
       </ModalProvider>
     </Router>

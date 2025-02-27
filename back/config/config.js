@@ -47,11 +47,8 @@ const customConfig = parse(customConfFileContent)
 const config = parse(defaultConfFileContent)
 
 for (const section in customConfig) {
-  const customParams = customConfig[section]
-  if (customParams) {
-    if (!config[section]) config[section] = {}
-    for (const param in customParams) if (customParams[param]) config[section][param] = customParams[param]
-  }
+  if (!config[section]) config[section] = customConfig[section]
+  else config[section] = { ...config[section], ...customConfig[section] }
 }
 
 if (config.logging.display_conf) jsonToString(config)
@@ -64,8 +61,8 @@ const getStorageConf = (subSection, altSubSection, altVal) =>
 const RUDI_CATALOG_URL = getCatalogConf('rudi_catalog_url', 'rudi_api_url')
 const RUDI_STORAGE_URL = getStorageConf('rudi_storage_url', 'rudi_media_url')
 
-console.debug(`[CONF] ${CATALOG} url:`, RUDI_CATALOG_URL)
-console.debug(`[CONF] ${STORAGE} url:`, RUDI_STORAGE_URL)
+console.debug(`[CONF] ${CATALOG} url:   `, RUDI_CATALOG_URL)
+console.debug(`[CONF] ${STORAGE} url:   `, RUDI_STORAGE_URL)
 console.debug(`[CONF] ${MANAGER} domain:`, getOptBackDomain())
 
 if (!RUDI_CATALOG_URL) throw new Error(`Configuration error: ${CATALOG} URL should be defined`)
@@ -78,16 +75,13 @@ export function getConf(section, subSection, defaultVal) {
   if (!section) return config
   const sect = config[section]
   if (!sect || !subSection) return sect
-  if (sect[subSection] !== undefined) return sect[subSection]
-  return defaultVal
+  return sect[subSection] ?? defaultVal
 }
 export function getAltConf(section, altSection, subSection, altSubSection, defaultVal) {
   if (!section) return config
-  const sect = customConfig[section] || customConfig[altSection] || config[section] || config[altSection]
+  const sect = customConfig[section] ?? customConfig[altSection] ?? config[section] ?? config[altSection]
   if (!sect || !subSection) return sect
-  if (sect[subSection] !== undefined) return sect[subSection]
-  if (sect[altSubSection] !== undefined) return sect[altSubSection]
-  return defaultVal
+  return sect[subSection] ?? sect[altSubSection] ?? defaultVal
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -104,29 +98,42 @@ export const getBackendListeningPort = () => LISTENING_PORT
 export const getBackendListeningAddress = () => LISTENING_ADDRESS
 export const getBackendListeningAddressAndPort = () => `${LISTENING_ADDRESS}:${LISTENING_PORT}`
 
-const HOST_DOMAIN = getOptBackDomain() || getBackendListeningAddressAndPort()
+const HOST_DOMAIN = getOptBackDomain() ?? getBackendListeningAddressAndPort()
 export const getHostDomain = () => HOST_DOMAIN
 
-console.debug(`[CONF] ${MANAGER} host:`, HOST_DOMAIN)
+console.debug(`[CONF] ${MANAGER} host:  `, HOST_DOMAIN)
 console.debug()
 
-const MANAGER_PREFIX = removeTrailingSlash(
-  getOptAppPrefix() !== undefined ? getOptAppPrefix() : getConf('server', 'manager_prefix') || ''
-)
-const BACKEND_PREFIX = removeTrailingSlash(getConf('server', 'backend_prefix', 'api'))
-const FRONTEND_PREFIX = removeTrailingSlash(getConf('server', 'frontend_prefix', ''))
-const CONSOLE_PREFIX = removeTrailingSlash(getConf('server', 'console_prefix', 'form'))
+const MANAGER_PREFIX = getOptAppPrefix() ?? getConf('server', 'manager_prefix', '')
+const BACKEND_PREFIX = getConf('server', 'backend_prefix', 'api')
+const FRONTEND_PREFIX = getConf('server', 'frontend_prefix', '')
+const CONSOLE_PREFIX = getConf('server', 'console_prefix', 'form')
 
-export const getManagerPath = (...args) => pathJoin('', MANAGER_PREFIX, ...args)
-export const getBackPath = (...args) => getManagerPath(BACKEND_PREFIX, ...args)
-export const getFrontPath = (...args) =>
-  FRONTEND_PREFIX ? getManagerPath(FRONTEND_PREFIX, ...args) : getManagerPath(...args)
-export const getConsolePath = (...args) => getManagerPath(CONSOLE_PREFIX, ...args)
+export const getPublicManager = (...args) => pathJoin('/', removeTrailingSlash(MANAGER_PREFIX), ...args)
+export const getPublicBack = (...args) => getPublicManager(BACKEND_PREFIX, ...args)
+export const getPublicFront = (...args) => getPublicManager(FRONTEND_PREFIX, ...args)
+export const getPublicConsole = (...args) => getPublicManager(CONSOLE_PREFIX, ...args)
 
-console.debug('[CONF] Manager prefix:', getManagerPath())
-console.debug('[CONF] Back prefix:', getBackPath())
-console.debug('[CONF] Front prefix:', getFrontPath())
-console.debug('[CONF] Console prefix:', getConsolePath())
+console.debug('[CONF] Public prefix Manager:', getPublicManager())
+console.debug('[CONF] Public prefix Backend:', getPublicBack())
+console.debug('[CONF] Public prefix FrontUI:', getPublicFront())
+console.debug('[CONF] Public prefix Console:', getPublicConsole())
+console.debug()
+
+export const getRouterPath = (...args) => pathJoin('/', removeTrailingSlash(MANAGER_PREFIX), ...args)
+export const getRouterBack = (...args) => getRouterPath(BACKEND_PREFIX, ...args)
+export const getDirectBack = (...url) => pathJoin('/', BACKEND_PREFIX, ...url)
+
+export const getRouterFront = (...args) => getRouterPath(removeTrailingSlash(FRONTEND_PREFIX), ...args)
+export const getDirectFront = (...args) => pathJoin('/', removeTrailingSlash(FRONTEND_PREFIX), ...args)
+
+export const getRouterConsole = (...args) => getRouterPath(CONSOLE_PREFIX, ...args)
+export const getDirectConsole = (...args) => pathJoin('/', CONSOLE_PREFIX, ...args)
+
+console.debug('[CONF] Routing Manager:', getRouterPath())
+console.debug('[CONF] Routing Backend:', getRouterBack(), '|', getDirectBack())
+console.debug('[CONF] Routing FrontUI:', getRouterFront())
+console.debug('[CONF] Routing Console:', getRouterConsole())
 console.debug()
 
 // -------------------------------------------------------------------------------------------------
@@ -159,8 +166,7 @@ export const getStorageDwnlUrl = (id) => getStorageUrl('download', id)
 // -------------------------------------------------------------------------------------------------
 const getDbConf = (subSection, altVal) => getConf('database', subSection, altVal).trim()
 
-const DB_PATH = getBackOptions(OPT_DB_PATH) || pathJoin(getDbConf('db_directory'), getDbConf('db_filename'))
-
+const DB_PATH = getBackOptions(OPT_DB_PATH, pathJoin(getDbConf('db_directory'), getDbConf('db_filename')))
 export const getDbPath = () => DB_PATH
 
 // -------------------------------------------------------------------------------------------------
@@ -169,11 +175,11 @@ export const getDbPath = () => DB_PATH
 export const getConfSuId = () => getDbConf('db_su_id', 0)
 export const getConfSuPwd = () => getDbConf('db_su_pwd')
 export const isConfSuPwdHashed = () => getDbConf('is_su_pwd_hashed')
+export const getConfSuMail = () => getDbConf('db_su_mail', 'node-admin@rudi-univ-rennes1.fr')
 export const getConfSuName = () => getDbConf('db_su_usr')
 export function setConfSuName(userDefinedSuName) {
   config.database.db_su_usr = userDefinedSuName
 }
-export const getConfSuMail = () => config?.database?.db_su_mail || 'node-admin@rudi-univ-rennes1.fr'
 
 // -------------------------------------------------------------------------------------------------
 // Keys

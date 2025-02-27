@@ -140,7 +140,7 @@ export function checkIsURL(url) {
   try {
     return new URL(url)
   } catch {
-    return undefined
+    return
   }
 }
 
@@ -171,33 +171,39 @@ export const getRoot = (...path) => pathJoin(ROOT, ...path)
 /**
  * Gives the folder where the libraries are installed
  */
-export const getNodeModulesDir = () => {
+export const getNodeModulesLib = (lib) => {
   const nm = 'node_modules'
   const root = getRootDir()
 
-  let libsPath = process.env.NODE_PATH
-  if (libsPath?.endsWith(nm)) return libsPath
-  if (!libsPath) {
-    try {
-      libsPath = execSync('npm root', { encoding: 'utf-8' })
-      if (libsPath.endsWith('\n')) libsPath = libsPath.slice(0, -1)
-      console.debug('LIBS_PATH:', libsPath)
-      return libsPath
-    } catch {
-      for (const lookupFolderLevel of ['', '..', '../..']) {
-        libsPath = pathJoin(root, lookupFolderLevel, nm)
-        if (existsSync(libsPath)) {
-          console.debug('LIBS_PATH:', libsPath)
-          return libsPath
-        }
-      }
+  let nodMod = process.env.NODE_PATH
+  let libPath = pathJoin(nodMod, lib)
+  if (nodMod?.endsWith(nm) && existsSync(libPath)) return libPath
+
+  try {
+    nodMod = execSync('npm root', { encoding: 'utf-8' })
+    if (nodMod.endsWith('\n')) nodMod = nodMod.slice(0, -1)
+    let libPath = pathJoin(nodMod, lib)
+    if (existsSync(libPath)) return libPath
+  } catch {
+    console.debug(`D [getNodeModulesLib] Lib not found at ${libPath}`)
+  }
+  try {
+    for (const lookupFolderLevel of ['', '..', '../..']) {
+      libPath = pathJoin(root, lookupFolderLevel, nm, lib)
+      if (existsSync(libPath)) return libPath
     }
-    console.debug('LIBS_PATH:', libsPath)
+  } catch {
+    console.debug(`W [getNodeModulesLib] Lib not found at ${libPath}`)
   }
   return root
 }
-const NODE_MODULES = getNodeModulesDir()
-export const getLib = (...path) => pathJoin(NODE_MODULES, ...path)
+
+const cacheLib = {}
+export const getLib = (lib, ...args) => {
+  if (!cacheLib[lib]) cacheLib[lib] = getNodeModulesLib(lib)
+  console.debug(`T [getLib] lib ${lib} found at`, pathJoin(cacheLib[lib], ...args))
+  return pathJoin(cacheLib[lib], ...args)
+}
 
 /**
  * Recursively list all files in a folder

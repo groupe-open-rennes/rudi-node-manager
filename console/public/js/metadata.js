@@ -144,7 +144,7 @@ export class MetadataForm extends RudiForm {
 
       let mediaServices = formValue.available_formats.services?.map((service) => MediaService.fromService(service))
 
-      let af = [].concat(mediaFiles || [], mediaServices || [])
+      let af = [].concat(mediaFiles ?? [], mediaServices ?? [])
       outputValue.available_formats = af.length ? af : undefined
 
       if (originalValue) {
@@ -206,8 +206,8 @@ export class MetadataForm extends RudiForm {
   async getStorageHeaders(initialHeaders = {}) {
     try {
       if (!this.mediaHeaders) {
-        const pmMediaJwtRes = await JsonHttpRequest.get(this.getUrlBackStorage('jwt'), this.pmHeaders).send()
-        const mediaToken = pmMediaJwtRes.token
+        const pmStorageJwtRes = await JsonHttpRequest.get(this.getUrlBackStorage('jwt'), this.pmHeaders).send()
+        const mediaToken = pmStorageJwtRes.token
         this.mediaHeaders = Object.assign(initialHeaders, { Authorization: `Bearer ${mediaToken}` })
       }
       return this.mediaHeaders
@@ -490,7 +490,7 @@ class MediaFile extends ForeignFile {
     file_status_update
   ) {
     super(media_name, file_size, file_type)
-    this.media_id = uuid || uuidv4()
+    this.media_id = uuid ?? uuidv4()
     this.media_caption = media_caption
     this.media_visual = media_visual
     this.media_dates = media_dates
@@ -576,7 +576,7 @@ class MediaFile extends ForeignFile {
   }
 
   /** @return true if has a file attached, false otherwise */
-  hasFileAttached = () => !!this.file
+  hasFileAttached = () => !!this.file?.size
 
   /**
    * Return a new File
@@ -650,7 +650,7 @@ class MediaFile extends ForeignFile {
 /** The object representing services for rudi resources */
 class MediaService {
   constructor(uuid, media_name, media_caption, media_visual, media_dates, connector) {
-    this.media_id = uuid || uuidv4()
+    this.media_id = uuid ?? uuidv4()
     this.media_name = media_name
     this.media_caption = media_caption
     this.media_visual = media_visual

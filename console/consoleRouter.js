@@ -29,8 +29,8 @@ export const consoleRouter = new express.Router()
 // -------------------------------------------------------------------------------------------------
 // Package dependencies
 // -------------------------------------------------------------------------------------------------
-consoleRouter.use('/dependencies/leaflet', staticDependency('leaflet'))
 consoleRouter.use('/dependencies/leaflet.draw', staticDependency('leaflet-draw'))
+consoleRouter.use('/dependencies/leaflet', staticDependency('leaflet'))
 
 // -------------------------------------------------------------------------------------------------
 // Main routes
