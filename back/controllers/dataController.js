@@ -1,3 +1,5 @@
+
+
 const mod = 'callApiSimple'
 
 // -------------------------------------------------------------------------------------------------
@@ -79,10 +81,12 @@ export const testPortalConnection = async (req, reply) => {
 
 // Controllers
 export const getCatalogVersion = (req, reply) => callCatalog(getCatalogAdminPath('version'), req, reply)
+
 export function getEnum(req, reply) {
   const lang = req.params?.lang ?? req.query?.lang ?? 'fr'
   return callCatalog(getCatalogAdminPath(`enum?lang=${lang}`), req, reply)
 }
+
 export const getLicences = (req, reply) => callCatalog(getCatalogAdminPath('licences'), req, reply)
 
 const getThemes = (req, reply) => {
@@ -93,6 +97,16 @@ const getThemes = (req, reply) => {
 export const getThemeByLang = (req, reply) => getThemes(req, reply)
 export const getCatalogPublicUrl = () => callCatalog(getCatalogAdminPath('check/node/url'))
 export const getPortalUrl = () => callCatalog(getCatalogAdminPath('check/portal/url'))
+export const getPortalOrganizationCatalog = (req, reply) => {
+  const id = req?.params?.id
+  if (!!id) {
+    try {
+      return callCatalog(getCatalogAdminPath('/portal/organizations', id), req, reply)
+    } catch (err) {
+      return treatAxiosError(err, CATALOG, req, reply)
+    }
+  } else throw Error('ID non fournit')
+}
 
 export async function getInitData(req, reply) {
   try {
@@ -118,5 +132,16 @@ export async function getInitData(req, reply) {
     // log.e(mod, 'getInitData', cleanErrMsg(e))
     if (reply) handleError(req, reply, e, 500, 'getInitData', 'init_data')
     else throw new Error(`Couldn't get init data: ${e.message}`)
+  }
+}
+
+export async function getPortalOrganization(req, reply) {
+  try {
+    const data = await Promise.all(getPortalOrganizationCatalog(req, reply))
+
+    return data
+  } catch (e) {
+    if (reply) handleError(req, reply, e, 500, 'getPortalOrganization', 'organziation')
+    throw new Error("Couldn't get organization from portal")
   }
 }
