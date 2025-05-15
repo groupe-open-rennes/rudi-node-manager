@@ -189,7 +189,7 @@ export function EditObjCard({
         href={getFormObj(objType, `update=${editID}`)}
         target="_blank"
         rel="noopener noreferrer"
-        className="btn btn-warning"
+        className="btn primary-btn"
       >
         <Pencil />
       </a>
