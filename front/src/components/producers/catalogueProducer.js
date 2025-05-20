@@ -105,6 +105,8 @@ export default function CatalogueProducer({ editMode, logout }) {
                 btnTextAdd="Ajouter un producteur"
                 btnTextChg="Modifier un producteur :"
                 refresh={refresh}
+                canAdd={false}
+                canDelete={false}
               ></EditObjCard>
             )}
             <InfiniteScroll
