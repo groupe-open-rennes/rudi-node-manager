@@ -50,7 +50,6 @@ export function ProducerCard({
   const updatePortalOrganizationUrl = (suffix) => back?.isLoaded && back.getBackCatalog('portal/organizations', suffix)
 
   const updateOrganizationFromPortal = (id) => {
-    console.log('Informations 2 :', id, updatePortalOrganizationUrl(id))
     axios
       .get(updatePortalOrganizationUrl(id))
       .then(() => refresh())
