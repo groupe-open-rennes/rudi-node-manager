@@ -132,14 +132,3 @@ export async function getInitData(req, reply) {
     else throw new Error(`Couldn't get init data: ${e.message}`)
   }
 }
-
-export async function getPortalOrganization(req, reply) {
-  try {
-    const data = await Promise.all(getPortalOrganizationCatalog(req, reply))
-
-    return data
-  } catch (e) {
-    if (reply) handleError(req, reply, e, 500, 'getPortalOrganization', 'organziation')
-    throw new Error("Couldn't get organization from portal")
-  }
-}
