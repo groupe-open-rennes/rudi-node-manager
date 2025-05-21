@@ -111,6 +111,22 @@ export function ProducerCard({
         return ''
     }
   }
+  const displayAttachmentStatus = (attachmentStatus) => {
+    switch (attachmentStatus) {
+      case 'DRAFT':
+        return displaySpan('rudi', 'En attente de rattachement')
+      case 'IN_PROGRESS':
+        return displaySpan('rudi', 'En attente de rattachement')
+      case 'CANCELLED':
+        return displaySpan('danger', 'Rattachement refusée')
+      case 'VALIDATED':
+        return displaySpan('rudi', 'Organisation rattachée')
+      case 'DISENGAGED':
+        return displaySpan('muted', 'Organisation détachée')
+      default:
+        return ''
+    }
+  }
 
   const displaySpan = (level, text) => (
     <span className={'status-pill text-bg-' + level} id="status-pill">
@@ -124,7 +140,10 @@ export function ProducerCard({
         <h5 className="card-header">
           <div className="d-flex justify-content-between align-items-center">
             <a>{producerName}</a>
-            <span className={'align-pill-right'}>{displayValidationStatus(producer['organization_status'])}</span>
+            <span className={'align-pill-right '}>
+              {producer['organization_status'] && displayValidationStatus(producer['organization_status'])}
+              {producer['linked_producer_status'] && displayAttachmentStatus(producer['linked_producer_status'])}
+            </span>
             {isEdit && (
               <div className="btn-group" role="group">
                 <button

@@ -252,6 +252,7 @@ a {
 .status-pill {
   @extend .badge;
   @extend .rounded-pill;
+  margin-left: 10px;
 }
 .align-pill-right {
   margin-right: 10px;
