@@ -102,7 +102,7 @@ export function ProducerCard({
       case 'IN_PROGRESS':
         return displaySpan('rudi', 'En attente de validation')
       case 'CANCELLED':
-        return displaySpan('danger', 'Organisation annulée')
+        return displaySpan('danger', 'Organisation refusée')
       case 'VALIDATED':
         return displaySpan('rudi', 'Organisation validée')
       case 'DISENGAGED':
