@@ -1,12 +1,7 @@
 /*! @license DOMPurify 3.3.0 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.3.0/LICENSE */
 
 const { entries, setPrototypeOf, isFrozen, getPrototypeOf, getOwnPropertyDescriptor } = Object
-let {
-  freeze,
-  seal,
-  create,
-  // eslint-disable-next-line import/no-mutable-exports
-} = Object // eslint-disable-line import/no-mutable-exports
+let { freeze, seal, create } = Object
 let { apply, construct } = typeof Reflect !== 'undefined' && Reflect
 if (!freeze) {
   freeze = function freeze(x) {
@@ -832,10 +827,9 @@ const mathMl = freeze([
 ])
 const xml = freeze(['xlink:href', 'xml:id', 'xlink:title', 'xml:space', 'xmlns:xlink'])
 
-// eslint-disable-next-line unicorn/better-regex
 const MUSTACHE_EXPR = seal(/\{\{[\w\W]*|[\w\W]*\}\}/gm) // Specify template detection regex for SAFE_FOR_TEMPLATES mode
 const ERB_EXPR = seal(/<%[\w\W]*|[\w\W]*%>/gm)
-const TMPLIT_EXPR = seal(/\$\{[\w\W]*/gm) // eslint-disable-line unicorn/better-regex
+const TMPLIT_EXPR = seal(/\$\{[\w\W]*/gm)
 const DATA_ATTR = seal(/^data-[\-\w.\u00B7-\uFFFF]+$/) // eslint-disable-line no-useless-escape
 const ARIA_ATTR = seal(/^aria-[\-\w]+$/) // eslint-disable-line no-useless-escape
 const IS_ALLOWED_URI = seal(
@@ -862,7 +856,6 @@ var EXPRESSIONS = /*#__PURE__*/ Object.freeze({
   TMPLIT_EXPR: TMPLIT_EXPR,
 })
 
-/* eslint-disable @typescript-eslint/indent */
 // https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType
 const NODE_TYPE = {
   element: 1,
@@ -1237,7 +1230,6 @@ function createDOMPurify() {
     /* Shield configuration object from prototype pollution */
     cfg = clone(cfg)
     PARSER_MEDIA_TYPE =
-      // eslint-disable-next-line unicorn/prefer-includes
       SUPPORTED_PARSER_MEDIA_TYPES.indexOf(cfg.PARSER_MEDIA_TYPE) === -1
         ? DEFAULT_PARSER_MEDIA_TYPE
         : cfg.PARSER_MEDIA_TYPE
@@ -1517,7 +1509,6 @@ function createDOMPurify() {
       element: node,
     })
     try {
-      // eslint-disable-next-line unicorn/prefer-dom-node-remove
       getParentNode(node).removeChild(node)
     } catch (_) {
       remove(node)
@@ -2072,18 +2063,11 @@ function createDOMPurify() {
       } else if (importedNode.nodeName === 'HTML') {
         body = importedNode
       } else {
-        // eslint-disable-next-line unicorn/prefer-dom-node-append
         body.appendChild(importedNode)
       }
     } else {
       /* Exit directly if we have nothing to do */
-      if (
-        !RETURN_DOM &&
-        !SAFE_FOR_TEMPLATES &&
-        !WHOLE_DOCUMENT &&
-        // eslint-disable-next-line unicorn/prefer-includes
-        dirty.indexOf('<') === -1
-      ) {
+      if (!RETURN_DOM && !SAFE_FOR_TEMPLATES && !WHOLE_DOCUMENT && dirty.indexOf('<') === -1) {
         return trustedTypesPolicy && RETURN_TRUSTED_TYPE
           ? trustedTypesPolicy.createHTML(dirty)
           : dirty
@@ -2121,7 +2105,6 @@ function createDOMPurify() {
       if (RETURN_DOM_FRAGMENT) {
         returnNode = createDocumentFragment.call(body.ownerDocument)
         while (body.firstChild) {
-          // eslint-disable-next-line unicorn/prefer-dom-node-append
           returnNode.appendChild(body.firstChild)
         }
       } else {

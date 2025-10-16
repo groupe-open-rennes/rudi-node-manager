@@ -143,7 +143,6 @@ purifier.addHook('afterSanitizeAttributes', (node) => {
   }
 })
 
-
 // Sanitize to allowed HTML; KEEP_CONTENT preserves text inside removed tags.
 export function sanitizeHtml(input) {
   return purifier.sanitize(input || '', {
