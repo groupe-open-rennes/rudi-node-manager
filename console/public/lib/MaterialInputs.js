@@ -1,5 +1,7 @@
 'use strict'
 
+import { sanitizeBoth } from '../js/sanitizer.js'
+
 /**
  * @author Florian Desmortreux
  */
@@ -1319,7 +1321,8 @@ export const SelectListMixin = (superclass) =>
     hide(value) {
       let option = this.getOption(value)
       option.toggleAttribute('hidden', true)
-      if (option === this.focusedElement) this.focusedElement = this.focusNext() ?? this.focusPrevious()
+      if (option === this.focusedElement)
+        this.focusedElement = this.focusNext() ?? this.focusPrevious()
     }
 
     show(value) {
@@ -1446,7 +1449,11 @@ export class ActionIcon extends HTMLElement {
    */
   #updateFocusable(noFocus) {
     if (noFocus) this.icon.toggleAttribute('tabindex', false)
-    else if (!this.hasAttribute('readonly') && !this.hasAttribute('disabled') && !this.hasAttribute('tabindex')) {
+    else if (
+      !this.hasAttribute('readonly') &&
+      !this.hasAttribute('disabled') &&
+      !this.hasAttribute('tabindex')
+    ) {
       this.icon.setAttribute('tabindex', 0)
     }
   }
@@ -1517,7 +1524,9 @@ export class MatFormElement extends HTMLElement {
     })
 
     // Append elements
-    this.shadowRoot.appendChild(createStyleElement(theme, iconStyle, matFormElementStyle, ...styles))
+    this.shadowRoot.appendChild(
+      createStyleElement(theme, iconStyle, matFormElementStyle, ...styles)
+    )
     this.shadowRoot.appendChild(this.wrapper)
   }
 
@@ -1650,7 +1659,8 @@ export class TextInput extends BaseTextInput {
   }
 
   #emailValidation() {
-    if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(this.input.value)) this.setAttribute('error', 'Email invalide')
+    if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(this.input.value))
+      this.setAttribute('error', 'Email invalide')
     else this.toggleAttribute('error', false)
   }
 
@@ -1929,7 +1939,9 @@ export class DataListInput extends ListMixin(BaseTextInput) {
 
   /** @inheritdoc */
   focusNext() {
-    let nextFocused = this.focusedElement ? this.focusedElement.nextElementSibling : this.listWrapper.firstElementChild
+    let nextFocused = this.focusedElement
+      ? this.focusedElement.nextElementSibling
+      : this.listWrapper.firstElementChild
 
     while (nextFocused && !nextFocused.hasAttribute('show')) {
       nextFocused = nextFocused.nextElementSibling
@@ -1960,9 +1972,18 @@ export class DataListInput extends ListMixin(BaseTextInput) {
 
     // Scrolling
     let twoOffsetHeight = 2 * this.focusedElement.offsetHeight
-    if (this.focusedElement.offsetTop + twoOffsetHeight > this.listWrapper.offsetHeight + this.listWrapper.scrollTop) {
-      this.listWrapper.scroll(0, this.focusedElement.offsetTop - this.listWrapper.offsetHeight + twoOffsetHeight)
-    } else if (this.focusedElement.offsetTop - this.focusedElement.offsetHeight < this.listWrapper.scrollTop) {
+    if (
+      this.focusedElement.offsetTop + twoOffsetHeight >
+      this.listWrapper.offsetHeight + this.listWrapper.scrollTop
+    ) {
+      this.listWrapper.scroll(
+        0,
+        this.focusedElement.offsetTop - this.listWrapper.offsetHeight + twoOffsetHeight
+      )
+    } else if (
+      this.focusedElement.offsetTop - this.focusedElement.offsetHeight <
+      this.listWrapper.scrollTop
+    ) {
       this.listWrapper.scroll(0, this.focusedElement.offsetTop - this.focusedElement.offsetHeight)
     }
     return this.focusedElement
@@ -2456,6 +2477,224 @@ export class MultiTextArea extends ActionMixin(BaseInput) {
   }
 }
 
+export class MultiRichTextArea extends ActionMixin(BaseInput) {
+  constructor(...styles) {
+    super(document.createElement('action-icon-list'), multiTextAreaStyle, ...styles)
+
+    // Create content
+    this.content = document.createElement('div')
+    this.content.classList.add('content')
+    this.content.toggleAttribute('empty', true)
+
+    // Create tab bar
+    let tabBar = document.createElement('div')
+    tabBar.classList.add('tab_bar')
+
+    // Create tabs wrapper
+    this.tabsWrapper = document.createElement('div')
+    this.tabsWrapper.classList.add('tabs_wrapper')
+    // this.tabsWrapper.setAttribute('tabindex', -1);
+    this.tabsWrapper.addEventListener('click', (event) => {
+      if (this.tabsWrapper.hasChildNodes()) {
+        this.action.focus()
+        event.stopPropagation()
+      }
+    })
+
+    // Create textarea
+    this.textarea = document.createElement('textarea')
+    // this.textarea.setAttribute('tabindex', 2)
+    this.textarea.addEventListener('click', (event) => event.stopPropagation())
+
+    // Init action
+    this.action.textContent = 'add'
+    this.action.setAttribute('tabindex', -1)
+    this.action.addEventListener('select', (event) => {
+      let tab = this.createTab(event.detail.value, '', event.detail.name)
+      this.tabTo(tab)
+      this.textarea.focus()
+    })
+
+    // Append element
+    tabBar.appendChild(this.tabsWrapper)
+    tabBar.appendChild(this.action)
+    this.content.appendChild(tabBar)
+    this.content.appendChild(this.textarea)
+    this.wrapper.prepend(this.content)
+
+    // Events
+    this.bindEventTo(this.content)
+
+    tabBar.addEventListener('keydown', (event) => {
+      switch (event.key) {
+        case 'ArrowRight':
+          this.tabNext()
+          event.preventDefault()
+          break
+        case 'ArrowLeft':
+          this.tabPrevious()
+          event.preventDefault()
+          break
+      }
+    })
+
+    tabBar.addEventListener('keyup', (event) => {
+      switch (event.key) {
+        case 'Enter':
+          this.textarea.focus()
+          break
+        case 'Backspace':
+          this.removeTab(this.currentTab)
+          break
+      }
+    })
+  }
+
+  set value(newValue) {
+    // Reset
+    console.log('reset')
+    while (this.tabsWrapper.firstChild) {
+      this.removeTab(this.tabsWrapper.lastChild)
+    }
+    if (!newValue) return
+
+    let errors = []
+    for (let val of newValue) {
+      try {
+        let tabName = this.action.getName(val.lang)
+        if (!tabName) errors.push(new SetValueError(this, val, 'Value is not in options'))
+        this.createTab(val.lang, val.html, tabName)
+      } catch (e) {
+        errors.push(e)
+      }
+    }
+    if (errors.length) throw errors
+    this.currentTab = this.tabsWrapper.firstChild
+    this.currentTab.toggleAttribute('selected', true)
+    // this.currentTab.setAttribute('tabindex', 1);
+    this.textarea.value = this.currentTab.text ?? ''
+    this.dispatchEvent(new Event('change'))
+  }
+
+  get value() {
+    if (this.currentTab) this.currentTab.text = this.textarea.value
+    let value = []
+    for (let tab of this.tabsWrapper.children) {
+      const { html, text } = sanitizeBoth(tab.text || '')
+      value.push({
+        lang: tab.tabValue,
+        text: text,
+        html: html,
+      })
+    }
+    return value.length ? value : undefined
+  }
+
+  createTab(tabValue, text, tabName) {
+    let tab = document.createElement('span')
+    // tab.setAttribute('tabindex', -1);
+    tab.textContent = tabName
+    tab.tabValue = tabValue
+    tab.text = text
+
+    // Close
+    let i = document.createElement('i')
+    i.classList.add('material-icons')
+    i.textContent = 'close'
+    i.addEventListener('click', (event) => {
+      if (this.hasAttribute('disabled') || this.hasAttribute('readonly')) return
+      event.stopPropagation()
+      this.removeTab(tab)
+    })
+
+    tab.appendChild(i)
+    this.tabsWrapper.appendChild(tab)
+
+    // Hide options
+    this.action.hide(tab.tabValue)
+
+    tab.addEventListener('click', (event) => {
+      event.stopPropagation()
+      this.tabTo(tab)
+      this.textarea.focus()
+    })
+
+    this.content.toggleAttribute('empty', false)
+    return tab
+  }
+
+  removeTab(tab) {
+    if (!tab) return
+    if (tab === this.currentTab) this.currentTab = this.tabNext() ?? this.tabPrevious()
+    tab.remove()
+    this.action.show(tab.tabValue)
+    if (!this.currentTab) {
+      this.textarea.textContent = ''
+      this.content.toggleAttribute('empty', true)
+    }
+  }
+
+  tabNext() {
+    return this.tabTo(this.currentTab?.nextElementSibling)
+  }
+  tabPrevious() {
+    return this.tabTo(this.currentTab?.previousElementSibling)
+  }
+
+  tabTo(tab) {
+    if (!tab || tab === this.currentTab) return
+    if (this.currentTab) {
+      this.currentTab.toggleAttribute('selected', false)
+      // this.currentTab.setAttribute('tabindex', -1);
+      this.currentTab.text = this.textarea.value
+    }
+    this.currentTab = tab
+    this.currentTab.toggleAttribute('selected', true)
+    // this.currentTab.setAttribute('tabindex', 1);
+    this.currentTab.focus()
+    this.textarea.value = this.currentTab.text ?? ''
+
+    // Scrolling
+    let scrollZone = 0.2 * this.tabsWrapper.offsetWidth
+    let offSetRight = this.currentTab.offsetLeft + this.currentTab.offsetWidth
+    if (offSetRight > this.tabsWrapper.offsetWidth + this.tabsWrapper.scrollLeft - scrollZone) {
+      this.tabsWrapper.scroll({
+        left: offSetRight - this.tabsWrapper.offsetWidth + scrollZone,
+        behavior: 'smooth',
+      })
+    } else if (this.currentTab.offsetLeft < this.tabsWrapper.scrollLeft + scrollZone) {
+      this.tabsWrapper.scroll({
+        left: this.currentTab.offsetLeft - scrollZone,
+        behavior: 'smooth',
+      })
+    }
+    return this.currentTab
+  }
+
+  /**
+   * Set options for to add cards
+   * @param {Array|Object} options
+   */
+  setOptions(options) {
+    this.action.setOptions(options)
+  }
+
+  // Lifecycle
+  connectedCallback() {
+    let options = this.getAttribute('options')
+    if (!this.action.optionById) {
+      if (!options) this.action.setOptions([''])
+      else {
+        try {
+          this.setOptions(JSON.parse(options))
+        } catch {
+          // Nothing
+        }
+      }
+    }
+  }
+}
+
 export class FileCard extends ActionCard {
   #value
 
@@ -2492,14 +2731,19 @@ export class FileCard extends ActionCard {
   set value(file) {
     if (file instanceof ForeignFile) this.toggleAttribute('cornered', true)
     else if (!(file instanceof File))
-      throw new SetValueError(this, file, new TypeError('Value should be a File or ForeignFile instance'))
+      throw new SetValueError(
+        this,
+        file,
+        new TypeError('Value should be a File or ForeignFile instance')
+      )
     console.debug('T [MatIn.FileCard]', 'file.size', file.size)
     this.#value = file
     this.name.textContent = file?.name
     this.type.textContent = file?.type
     if (file.size) {
       this.size.textContent = this.humanReadableByteCountSI(file.size)
-      if (file.file_storage_status === 'missing') this.size.innerHTML = "<span class='alert'>indisponible</span>"
+      if (file.file_storage_status === 'missing')
+        this.size.innerHTML = "<span class='alert'>indisponible</span>"
     } else {
       this.size.innerHTML = "<span class='alert'>0 Ko!!!</span>"
     }
@@ -2673,7 +2917,8 @@ export class MapInput extends BaseInput {
 
     this.map = L.map(this.map, { scrollWheelZoom: false })
     L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="http://osm.org/copyright" tabindex="-1">OpenStreetMap</a> contributors',
+      attribution:
+        '&copy; <a href="http://osm.org/copyright" tabindex="-1">OpenStreetMap</a> contributors',
     }).addTo(this.map)
 
     // Initialise the FeatureGroup to store editable layers
@@ -2860,7 +3105,10 @@ export class MapInput extends BaseInput {
     })
 
     // Remove tabindex on a element
-    this.map._controlContainer.lastElementChild.lastElementChild.firstElementChild.setAttribute('tabindex', -1)
+    this.map._controlContainer.lastElementChild.lastElementChild.firstElementChild.setAttribute(
+      'tabindex',
+      -1
+    )
     this.fullScreenBtn.setAttribute('tabindex', -1)
     let control = this.map._controlContainer.firstElementChild.children[0].children
     for (let c of control) c.setAttribute('tabindex', -1)
@@ -2922,6 +3170,7 @@ customElements.define('selectm-input', SelectMultipleInput)
 customElements.define('datalist-input', DataListInput)
 customElements.define('textarea-input', TextareaInput)
 customElements.define('multi-textarea', MultiTextArea)
+customElements.define('multi-rich-textarea', MultiRichTextArea)
 customElements.define('file-input', FilesInput)
 customElements.define('checkbox-input', Checkbox)
 customElements.define('map-input', MapInput)
