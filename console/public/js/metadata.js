@@ -748,6 +748,7 @@ class MediaService {
 //     {
 //       lang: 'fr',
 //       text: 'Test de donnée description',
+//       html: '<strong>Test de donnée description html</strong>'
 //       autre: 'test'
 //     }
 //   ],
