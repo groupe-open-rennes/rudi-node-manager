@@ -2563,7 +2563,7 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
       try {
         let tabName = this.action.getName(val.lang)
         if (!tabName) errors.push(new SetValueError(this, val, 'Value is not in options'))
-        this.createTab(val.lang, val.html, tabName)
+        this.createTab(val.lang, val.html ?? val.text, tabName)
       } catch (e) {
         errors.push(e)
       }
