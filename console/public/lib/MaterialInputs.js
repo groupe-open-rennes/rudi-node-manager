@@ -2,32 +2,7 @@
 
 import { sanitizeBoth } from '../js/sanitizer.js'
 
-// Importer depuis le bon chemin (sans extension .js et sans répétition de 'ckeditor5')
-import translations from '../dependencies/ckeditor5/ckeditor5/translations/fr.js'
-
-// Corriger l'import du module principal
-import {
-  Alignment,
-  Autoformat,
-  AutoLink,
-  Autosave,
-  BlockQuote,
-  Bold,
-  Code,
-  ClassicEditor, // Ajouter ClassicEditor si besoin
-  Essentials,
-  HorizontalLine,
-  Italic,
-  Link,
-  List,
-  Paragraph,
-  SourceEditing,
-  Strikethrough,
-  TextPartLanguage,
-  TextTransformation,
-  TodoList,
-  Underline,
-} from '../dependencies/ckeditor5/ckeditor5/ckeditor5.js' // Avec extension .js et sans .umd
+import { buildCKEditor } from '../js/ckeditor.js'
 
 /**
  * @author Florian Desmortreux
@@ -2508,69 +2483,6 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
   constructor(...styles) {
     super(document.createElement('action-icon-list'), multiTextAreaStyle, ...styles)
 
-    // Configuration de CKEditor
-    this.editorConfig = {
-      toolbar: {
-        items: [
-          'undo',
-          'redo',
-          '|',
-          'sourceEditing',
-          'textPartLanguage',
-          '|',
-          'bold',
-          'italic',
-          'underline',
-          'strikethrough',
-          'code',
-          '|',
-          'horizontalLine',
-          'link',
-          'blockQuote',
-          '|',
-          'alignment',
-          '|',
-          'bulletedList',
-          'numberedList',
-          'todoList',
-        ],
-        shouldNotGroupWhenFull: false,
-      },
-      plugins: [
-        Alignment,
-        Autoformat,
-        AutoLink,
-        Autosave,
-        BlockQuote,
-        Bold,
-        Code,
-        Essentials,
-        HorizontalLine,
-        Italic,
-        Link,
-        List,
-        Paragraph,
-        SourceEditing,
-        Strikethrough,
-        TextPartLanguage,
-        TextTransformation,
-        TodoList,
-        Underline,
-      ],
-      initialData: '',
-      language: 'fr',
-      licenseKey: 'GPL',
-      link: {
-        addTargetToExternalLinks: true,
-        defaultProtocol: 'https://',
-      },
-      placeholder: 'Tapez ou collez votre contenu ici...',
-      translations: [translations],
-    }
-
-    // Instance de l'éditeur actuel
-    this.currentEditor = null
-
     // Create content
     this.content = document.createElement('div')
     this.content.classList.add('content')
@@ -2584,22 +2496,30 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     this.tabsWrapper = document.createElement('div')
     this.tabsWrapper.classList.add('tabs_wrapper')
     this.tabsWrapper.addEventListener('click', (event) => {
+      event.stopPropagation()
       if (this.tabsWrapper.hasChildNodes()) {
         this.action.focus()
-        event.stopPropagation()
       }
     })
 
-    // Create editor container (remplace textarea)
+    // Create CKEditor container (remplace le textarea)
     this.editorContainer = document.createElement('div')
     this.editorContainer.classList.add('editor-container')
+    // this.editorContainer.style.minHeight = '5em'
+    // this.editorContainer.addEventListener('click', (event) => event.stopPropagation())
+
+    // CKEditor instance (sera initialisée plus tard)
+    this.editorInstance = null
+    this.editorReady = false
 
     // Init action
     this.action.textContent = 'add'
     this.action.setAttribute('tabindex', -1)
-    this.action.addEventListener('select', async (event) => {
+    this.action.addEventListener('select', (event) => {
+      event.stopPropagation()
       let tab = this.createTab(event.detail.value, '', event.detail.name)
-      await this.tabTo(tab)
+      this.tabTo(tab)
+      this.focusEditor()
     })
 
     // Append element
@@ -2625,58 +2545,39 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
       }
     })
 
-    tabBar.addEventListener('keyup', async (event) => {
+    tabBar.addEventListener('keyup', (event) => {
       switch (event.key) {
         case 'Enter':
-          if (this.currentEditor) {
-            this.currentEditor.editing.view.focus()
-          }
+          this.focusEditor()
           break
         case 'Backspace':
-          await this.removeTab(this.currentTab)
+          this.removeTab(this.currentTab)
           break
       }
     })
   }
 
-  // Méthode pour créer un éditeur CKEditor
-  async createEditor(initialContent = '') {
-    // Détruire l'éditeur existant si présent
-    if (this.currentEditor) {
-      await this.currentEditor.destroy()
-      this.currentEditor = null
+  focusEditor() {
+    if (this.editorInstance && this.editorReady) {
+      this.editorInstance.editing.view.focus()
     }
+  }
 
-    // Vider le conteneur
-    this.editorContainer.innerHTML = ''
+  saveCurrentTabContent() {
+    if (this.currentTab && this.editorInstance && this.editorReady) {
+      this.currentTab.text = this.editorInstance.getData()
+    }
+  }
 
-    // Créer un nouvel élément div pour l'éditeur
-    const editorElement = document.createElement('div')
-    this.editorContainer.appendChild(editorElement)
-
-    // Créer l'éditeur avec la configuration
-    const config = { ...this.editorConfig, initialData: initialContent }
-
-    try {
-      this.currentEditor = await ClassicEditor.create(editorElement, config)
-
-      // Ajouter un listener pour détecter les changements
-      this.currentEditor.model.document.on('change:data', () => {
-        if (this.currentTab) {
-          this.currentTab.text = this.currentEditor.getData()
-        }
-      })
-
-      return this.currentEditor
-    } catch (error) {
-      console.error('Erreur lors de la création de CKEditor:', error)
-      throw error
+  loadTabContent(tab) {
+    if (this.editorInstance && this.editorReady) {
+      const content = tab.text ?? ''
+      this.editorInstance.setData(content)
     }
   }
 
   set value(newValue) {
     // Reset
-    console.log('reset')
     while (this.tabsWrapper.firstChild) {
       this.removeTab(this.tabsWrapper.lastChild)
     }
@@ -2693,15 +2594,20 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
       }
     }
     if (errors.length) throw errors
+
     this.currentTab = this.tabsWrapper.firstChild
-    this.currentTab.toggleAttribute('selected', true)
-    // this.currentTab.setAttribute('tabindex', 1);
-    this.textarea.value = this.currentTab.text ?? ''
+    if (this.currentTab) {
+      this.currentTab.toggleAttribute('selected', true)
+      this.loadTabContent(this.currentTab)
+    }
+
     this.dispatchEvent(new Event('change'))
   }
 
   get value() {
-    if (this.currentTab) this.currentTab.text = this.textarea.value
+    // Sauvegarder le contenu de l'onglet actuel avant de récupérer les valeurs
+    this.saveCurrentTabContent()
+
     let value = []
     for (let tab of this.tabsWrapper.children) {
       const { html, text } = sanitizeBoth(tab.text || '')
@@ -2716,7 +2622,6 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
 
   createTab(tabValue, text, tabName) {
     let tab = document.createElement('span')
-    // tab.setAttribute('tabindex', -1);
     tab.textContent = tabName
     tab.tabValue = tabValue
     tab.text = text
@@ -2740,29 +2645,59 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     tab.addEventListener('click', (event) => {
       event.stopPropagation()
       this.tabTo(tab)
+      this.focusEditor()
     })
 
     this.content.toggleAttribute('empty', false)
     return tab
   }
 
-  async tabTo(tab) {
-    if (!tab || tab === this.currentTab) return
-
-    if (this.currentTab) {
-      this.currentTab.toggleAttribute('selected', false)
-      // Sauvegarder le contenu actuel
-      if (this.currentEditor) {
-        this.currentTab.text = this.currentEditor.getData()
+  removeTab(tab) {
+    if (!tab) return
+    if (tab === this.currentTab) {
+      this.currentTab = this.tabNext() ?? this.tabPrevious()
+      if (this.currentTab) {
+        this.tabTo(this.currentTab)
+      } else {
+        this.currentTab = null
       }
     }
+    tab.remove()
+    this.action.show(tab.tabValue)
 
+    if (!this.currentTab) {
+      if (this.editorInstance && this.editorReady) {
+        this.editorInstance.setData('')
+      }
+      this.content.toggleAttribute('empty', true)
+    } else {
+      this.loadTabContent(this.currentTab)
+    }
+  }
+
+  tabNext() {
+    return this.tabTo(this.currentTab?.nextElementSibling)
+  }
+
+  tabPrevious() {
+    return this.tabTo(this.currentTab?.previousElementSibling)
+  }
+
+  tabTo(tab) {
+    if (!tab || tab === this.currentTab) return
+
+    // Sauvegarder le contenu de l'onglet actuel
+    if (this.currentTab) {
+      this.currentTab.toggleAttribute('selected', false)
+      this.saveCurrentTabContent()
+    }
+
+    // Charger le nouveau contenu
     this.currentTab = tab
     this.currentTab.toggleAttribute('selected', true)
     this.currentTab.focus()
 
-    // Créer un nouvel éditeur avec le contenu de l'onglet
-    await this.createEditor(this.currentTab.text ?? '')
+    this.loadTabContent(this.currentTab)
 
     // Scrolling
     let scrollZone = 0.2 * this.tabsWrapper.offsetWidth
@@ -2781,25 +2716,24 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     return this.currentTab
   }
 
-  async removeTab(tab) {
-    if (!tab) return
-    if (tab === this.currentTab) {
-      const nextTab = this.tabNext() ?? this.tabPrevious()
-      if (nextTab) {
-        await this.tabTo(nextTab)
-      } else {
-        this.currentTab = null
+  async loadCKEditorStyles() {
+    const cssFiles = [
+      './dependencies/ckeditor5/ckeditor5/ckeditor5.css',
+      './dependencies/ckeditor5/ckeditor5/ckeditor5-editor.css',
+    ]
+
+    for (const cssFile of cssFiles) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const response = await fetch(cssFile)
+        // eslint-disable-next-line no-await-in-loop
+        const cssText = await response.text()
+        const style = document.createElement('style')
+        style.textContent = cssText
+        this.shadowRoot.appendChild(style)
+      } catch (error) {
+        console.warn(`Impossible de charger ${cssFile}:`, error)
       }
-    }
-    tab.remove()
-    this.action.show(tab.tabValue)
-    if (!this.currentTab) {
-      if (this.currentEditor) {
-        await this.currentEditor.destroy()
-        this.currentEditor = null
-      }
-      this.editorContainer.innerHTML = ''
-      this.content.toggleAttribute('empty', true)
     }
   }
 
@@ -2812,7 +2746,7 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
   }
 
   // Lifecycle
-  connectedCallback() {
+  async connectedCallback() {
     let options = this.getAttribute('options')
     if (!this.action.optionById) {
       if (!options) this.action.setOptions([''])
@@ -2823,6 +2757,39 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
           // Nothing
         }
       }
+    }
+
+    // Initialiser CKEditor une fois que le composant est dans le DOM
+    // await buildCKEditor(this.editorContainer, '')
+
+    // Charger les styles CKEditor
+    await this.loadCKEditorStyles()
+
+    try {
+      this.editorInstance = await buildCKEditor(this.editorContainer, '')
+      this.editorReady = true
+
+      // Empêcher la propagation des clics dans l'éditeur
+      this.editorContainer.addEventListener('click', (event) => {
+        event.stopPropagation()
+      })
+    } catch (error) {
+      console.error("Erreur lors de l'initialisation de CKEditor:", error)
+    }
+  }
+
+  disconnectedCallback() {
+    // Nettoyer l'instance CKEditor quand le composant est retiré du DOM
+    if (this.editorInstance) {
+      this.editorInstance
+        .destroy()
+        .then(() => {
+          this.editorInstance = null
+          this.editorReady = false
+        })
+        .catch((error) => {
+          console.error('Erreur lors de la destruction de CKEditor:', error)
+        })
     }
   }
 }
