@@ -2505,11 +2505,7 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     // Create CKEditor container (remplace le textarea)
     this.editorContainer = document.createElement('div')
     this.editorContainer.classList.add('editor-container')
-    // this.editorContainer.style.minHeight = '5em'
-    // this.editorContainer.addEventListener('click', (event) => event.stopPropagation())
 
-    // CKEditor instance (sera initialisée plus tard)
-    this.editorInstance = null
     this.editorReady = false
 
     // Init action
@@ -2558,21 +2554,21 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
   }
 
   focusEditor() {
-    if (this.editorInstance && this.editorReady) {
-      this.editorInstance.editing.view.focus()
+    if (this.editorContainer && this.editorReady) {
+      this.editorContainer.editing.view.focus()
     }
   }
 
   saveCurrentTabContent() {
-    if (this.currentTab && this.editorInstance && this.editorReady) {
-      this.currentTab.text = this.editorInstance.getData()
+    if (this.currentTab && this.editorContainer && this.editorReady) {
+      this.currentTab.text = this.editorContainer.getData()
     }
   }
 
   loadTabContent(tab) {
-    if (this.editorInstance && this.editorReady) {
+    if (this.editorContainer && this.editorReady) {
       const content = tab.text ?? ''
-      this.editorInstance.setData(content)
+      this.editorContainer.setData(content)
     }
   }
 
@@ -2666,8 +2662,8 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     this.action.show(tab.tabValue)
 
     if (!this.currentTab) {
-      if (this.editorInstance && this.editorReady) {
-        this.editorInstance.setData('')
+      if (this.editorContainer && this.editorReady) {
+        this.editorContainer.setData('')
       }
       this.content.toggleAttribute('empty', true)
     } else {
@@ -2759,36 +2755,30 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
       }
     }
 
-    // Initialiser CKEditor une fois que le composant est dans le DOM
-    // await buildCKEditor(this.editorContainer, '')
-
     // Charger les styles CKEditor
     await this.loadCKEditorStyles()
 
     try {
-      this.editorInstance = await buildCKEditor(this.editorContainer, '')
-      this.editorReady = true
-
-      // Empêcher la propagation des clics dans l'éditeur
-      this.editorContainer.addEventListener('click', (event) => {
-        event.stopPropagation()
+      this.editorContainer = await buildCKEditor(this.editorContainer, '').finally(() => {
+        this.editorContainer.addEventListener('click', (event) => event.stopPropagation())
       })
+      this.editorReady = true
     } catch (error) {
-      console.error("Erreur lors de l'initialisation de CKEditor:", error)
+      console.error('Error initializing CKEditor: ', error)
     }
   }
 
   disconnectedCallback() {
     // Nettoyer l'instance CKEditor quand le composant est retiré du DOM
-    if (this.editorInstance) {
-      this.editorInstance
+    if (this.editorContainer) {
+      this.editorContainer
         .destroy()
         .then(() => {
-          this.editorInstance = null
+          this.editorContainer = null
           this.editorReady = false
         })
         .catch((error) => {
-          console.error('Erreur lors de la destruction de CKEditor:', error)
+          console.error('Error destroying CKEditor: ', error)
         })
     }
   }
