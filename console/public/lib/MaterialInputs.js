@@ -2500,6 +2500,7 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
       if (this.tabsWrapper.hasChildNodes()) {
         this.action.focus()
       }
+      this.focusEditor()
     })
 
     // Create CKEditor container (remplace le textarea)
@@ -2524,9 +2525,6 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     this.content.appendChild(tabBar)
     this.content.appendChild(this.editorContainer)
     this.wrapper.prepend(this.content)
-
-    // Events
-    this.bindEventTo(this.content)
 
     tabBar.addEventListener('keydown', (event) => {
       switch (event.key) {
@@ -2760,7 +2758,10 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
 
     try {
       this.editorContainer = await buildCKEditor(this.editorContainer, '').finally(() => {
-        this.editorContainer.addEventListener('click', (event) => event.stopPropagation())
+        this.editorContainer.addEventListener('click', (event) => {
+          event.stopPropagation()
+          this.focusEditor()
+        })
       })
       this.editorReady = true
     } catch (error) {

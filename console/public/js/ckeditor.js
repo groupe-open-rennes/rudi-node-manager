@@ -46,7 +46,6 @@ const editorConfig = {
       '|',
       'bulletedList',
       'numberedList',
-      'todoList',
     ],
     shouldNotGroupWhenFull: false,
   },
