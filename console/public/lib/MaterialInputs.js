@@ -2712,8 +2712,8 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
 
   async loadCKEditorStyles() {
     const cssFiles = [
-      './dependencies/ckeditor5/ckeditor5/ckeditor5.css',
-      './dependencies/ckeditor5/ckeditor5/ckeditor5-editor.css',
+      './dependencies/ckeditor5/ckeditor5.css',
+      './dependencies/ckeditor5/ckeditor5-editor.css',
     ]
 
     for (const cssFile of cssFiles) {

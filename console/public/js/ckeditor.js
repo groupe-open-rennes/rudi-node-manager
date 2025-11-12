@@ -21,8 +21,8 @@ import {
   TextTransformation,
   TodoList,
   Underline,
-} from '../dependencies/ckeditor5/ckeditor5/ckeditor5.js'
-import translations from '../dependencies/ckeditor5/ckeditor5/translations/fr.js'
+} from '../dependencies/ckeditor5/ckeditor5.js'
+import translations from '../dependencies/ckeditor5/translations/fr.js'
 
 const editorConfig = {
   toolbar: {
