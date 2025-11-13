@@ -107,7 +107,14 @@
             { "id": "@summary", "tag": "multi-rich-textarea", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@theme", "tag": "select-input", "class": ["col", "s4", "m4"], "attr": { "required": true } },
             { "id": "@keywords", "tag": "datalist-input", "class": ["col", "s4", "m4"], "attr": { "required": true } },
-            { "id": "@dataset_update_frequency", "tag": "select-input", "class": ["col", "s4"], "attr": { "required": true }},
+            {
+              "tag": "div",
+              "attr": { "required": true },
+              "class": ["row", "flex"],
+              "children": [
+                { "id": "@dataset_update_frequency", "tag": "select-input", "class": ["col", "s4"]}
+              ]
+            },
             { "id": "@producer", "tag": "select-input", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@contacts", "tag": "selectm-input", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@resource_languages", "tag": "selectm-input", "class": ["col", "s4", "m4"] },
@@ -339,12 +346,7 @@
           "helper": "Liste de mots-clés qui caractérisent la ressource (séparés par des virgules)"
         }
       },
-      "dataset_update_frequency": {
-        "attr": {
-          "label": "Fréquence de mise à jour",
-          "helper": "Fréquence de mise à jour des médias"
-        }
-      },
+      "dataset_update_frequency": { "attr": { "label": "Fréquence de mise à jour", "helper": "Fréquence de mise à jour des médias"} },
       "producer": { "attr": { "label": "Producteur de la donnée", "helper": "Organisation qui a produit la donnée" } },
       "contacts": { "attr": { "label": "Contact", "helper": "Liste de personnes référentes pour la donnée" } },
       "files": { "attr": { "label": "Fichiers", "helper": "Liste des formats disponibles pour la donnée" } },
