@@ -107,6 +107,7 @@
             { "id": "@summary", "tag": "multi-rich-textarea", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@theme", "tag": "select-input", "class": ["col", "s4", "m4"], "attr": { "required": true } },
             { "id": "@keywords", "tag": "datalist-input", "class": ["col", "s4", "m4"], "attr": { "required": true } },
+            { "id": "@dataset_update_frequency", "tag": "select-input", "class": ["col", "s4"], "attr": { "required": true }},
             { "id": "@producer", "tag": "select-input", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@contacts", "tag": "selectm-input", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@resource_languages", "tag": "selectm-input", "class": ["col", "s4", "m4"] },
@@ -296,7 +297,8 @@
       },
       "metadata_provider": "metadata_provider",
       "metadata_contacts": "metadata_contacts"
-    }
+    },
+    "dataset_update_frequency": "dataset_update_frequency"
   },
   "fragmentSet": {
     "fr": {
@@ -335,6 +337,12 @@
         "attr": {
           "label": "Mot clés",
           "helper": "Liste de mots-clés qui caractérisent la ressource (séparés par des virgules)"
+        }
+      },
+      "dataset_update_frequency": {
+        "attr": {
+          "label": "Fréquence de mise à jour",
+          "helper": "Fréquence de mise à jour des médias"
         }
       },
       "producer": { "attr": { "label": "Producteur de la donnée", "helper": "Organisation qui a produit la donnée" } },
@@ -460,6 +468,7 @@
       "summary": "opt_language",
       "theme": { "init": { "setOptions": ["$themes"] } },
       "keywords": { "init": { "setDataList": ["$keywords"] } },
+      "dataset_update_frequency": { "init": { "setOptions": ["$updatefrequency"] } },
       "producer": "opt_organizations",
       "contacts": "opt_contacts",
       "resource_languages": "opt_language",
