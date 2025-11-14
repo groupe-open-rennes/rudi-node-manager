@@ -1781,8 +1781,11 @@ export class SelectInput extends SelectInputs {
   setOptions(newOptions, noEmpty) {
     if (!noEmpty) {
       // Add an empty option
-      if (Array.isArray(newOptions)) newOptions = [''].concat(newOptions)
-      else newOptions = Object.assign({ 0: '' }, newOptions)
+      if (Array.isArray(newOptions)) {
+        newOptions = [''].concat(newOptions)
+      } else {
+        newOptions = Object.assign({ '': '' }, newOptions)
+      }
     }
     super.setOptions(newOptions)
     this.#select(this.firstOpt) // Select first option by default
