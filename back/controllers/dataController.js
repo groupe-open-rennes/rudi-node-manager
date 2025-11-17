@@ -95,7 +95,7 @@ const getThemes = (req, reply) => {
 export const getThemeByLang = (req, reply) => getThemes(req, reply)
 export const getCatalogPublicUrl = () => callCatalog(getCatalogAdminPath('check/node/url'))
 export const getPortalUrl = () => callCatalog(getCatalogAdminPath('check/portal/url'))
-export const getPortalOrganizationCatalog = (req, reply) => {
+export const getPortalOrganizationCatalogFromId = (req, reply) => {
   const id = req?.params?.id
   if (!!id) {
     try {
@@ -104,6 +104,13 @@ export const getPortalOrganizationCatalog = (req, reply) => {
       return treatAxiosError(err, CATALOG, req, reply)
     }
   } else throw Error('ID non fournit')
+}
+export const searchPortalOrganizationsCatalog = (req, reply) => {
+  try {
+    return callCatalog(getCatalogAdminPath('/portal/organizations'), req, reply)
+  } catch (err) {
+    return treatAxiosError(err, CATALOG, req, reply)
+  }
 }
 
 export async function getInitData(req, reply) {
