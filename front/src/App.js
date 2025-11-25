@@ -22,6 +22,7 @@ import CatalogueReports from './components/generic/catalogueReports'
 import ModalProvider from './components/modals/genericModalContext'
 import CatalogueUser from './components/users/catalogueUser'
 import Visualisation from './components/visualisation/visualisation'
+import AttachProducers from './components/producers/attach/attachProducers'
 import { BackConfContext } from './context/backConfContext.js'
 import { JwtContext } from './context/jwtContext'
 
@@ -206,6 +207,7 @@ export default function App() {
           <Route path="/" element={<CatalogueMetadata editMode={isEditor} logout={logout} />} />
           <Route path="metadata" element={<CatalogueMetadata editMode={isEditor} logout={logout} />} />
           <Route path="producer" element={<CatalogueProducer editMode={isEditor} logout={logout} />} />
+          <Route path="producer/attach" element={<AttachProducers logout={logout} />} />
           <Route path="contact" element={<CatalogueContact editMode={isEditor} logout={logout} />} />
           <Route path="pub_key" element={<CataloguePubKeys editMode={isAdmin} logout={logout} />} />
           <Route path="report" element={<CatalogueReports editMode={isAdmin} logout={logout} />} />

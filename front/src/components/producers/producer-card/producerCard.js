@@ -1,10 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import { ArrowRepeat, Pencil, Trash } from 'react-bootstrap-icons'
-import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
-import { BackConfContext } from '../../context/backConfContext'
-import { getOptConfirm, getOptOk, ModalContext } from '../modals/genericModalContext'
+import { ArrowRepeat, Pencil, Plus, Trash } from 'react-bootstrap-icons'
+import useDefaultErrorHandler from '../../../utils/useDefaultErrorHandler'
+import { BackConfContext } from '../../../context/backConfContext'
+import { getOptConfirm, getOptOk, ModalContext } from '../../modals/genericModalContext'
 import axios from 'axios'
+import { Loader } from '../../other/loader/loader'
+import GenericModal, { useGenericModal, useGenericModalOptions } from '../../modals/genericModal'
 
 ProducerCard.prototype = {
   editMode: PropTypes.bool,
@@ -17,6 +19,7 @@ ProducerCard.prototype = {
   deleteConfirmMsg: PropTypes.func,
   deleteMsg: PropTypes.func,
   refresh: PropTypes.func,
+  attachUrl: PropTypes.func,
 }
 
 export function ProducerCard({
@@ -30,19 +33,21 @@ export function ProducerCard({
   deleteConfirmMsg,
   deleteMsg,
   refresh,
+  attachUrl,
 }) {
   const { defaultErrorHandler } = useDefaultErrorHandler()
-
   const { backConf } = useContext(BackConfContext)
   const [back, setBack] = useState(backConf)
   useEffect(() => setBack(backConf), [backConf])
-
-  const { changeOptions, toggle } = useContext(ModalContext)
+  const { options, changeOptions } = useGenericModalOptions()
+  const { toggle, visible } = useGenericModal()
 
   const getFormProducer = (producer, query) => back?.isLoaded && back.getConsole(producer, query)
 
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
+  const [showAttachButton, setShowAttachButton] = useState(!!attachUrl)
+  const [attachLoading, setAttachLoading] = useState(false )
 
   const producerId = producer[propId]
   const producerName = producer[propName]
@@ -68,6 +73,24 @@ export function ProducerCard({
         toggle()
       })
       .catch((err) => defaultErrorHandler(err))
+  }
+
+  const attachProducer = (id) => {
+    setAttachLoading(true)
+    setShowAttachButton(false)
+    axios
+      .post(attachUrl(id))
+      .then(() => {
+        setAttachLoading(false)
+      })
+      .catch((err) => {
+        defaultErrorHandler(err)
+
+        // Une erreur est survenue, on n'affiche plus le bouton de rattachement
+        // On doit recharger la page pour afficher le statut actuel de l'organisation
+        setShowAttachButton(false)
+        setAttachLoading(false)
+      })
   }
 
   /**
@@ -98,15 +121,15 @@ export function ProducerCard({
   const displayValidationStatus = (organizationStatus) => {
     switch (organizationStatus) {
       case 'DRAFT':
-        return displaySpan('rudi', 'En attente de validation')
+        return displaySpan('rudi', 'Publication en attente de validation')
       case 'IN_PROGRESS':
-        return displaySpan('rudi', 'En attente de validation')
+        return displaySpan('rudi', 'Publication en attente de validation')
       case 'CANCELLED':
-        return displaySpan('danger', 'Organisation refusée')
+        return displaySpan('danger', 'Publication refusée')
       case 'VALIDATED':
-        return displaySpan('rudi', 'Organisation validée')
+        return displaySpan('rudi', 'Publié')
       case 'DISENGAGED':
-        return displaySpan('muted', 'Organisation supprimée')
+        return displaySpan('muted', 'Archivé')
       default:
         return ''
     }
@@ -114,15 +137,15 @@ export function ProducerCard({
   const displayAttachmentStatus = (attachmentStatus) => {
     switch (attachmentStatus) {
       case 'DRAFT':
-        return displaySpan('rudi', 'En attente de rattachement')
+        return displaySpan('rudi', 'Rattachement en attente de validation')
       case 'IN_PROGRESS':
-        return displaySpan('rudi', 'En attente de rattachement')
+        return displaySpan('rudi', 'Rattachement en attente de validation')
       case 'CANCELLED':
-        return displaySpan('danger', 'Rattachement refusée')
+        return displaySpan('danger', 'Rattachement refusé')
       case 'VALIDATED':
-        return displaySpan('rudi', 'Organisation rattachée')
+        return displaySpan('rudi', 'Rattaché')
       case 'DISENGAGED':
-        return displaySpan('muted', 'Organisation détachée')
+        return displaySpan('muted', 'Détaché')
       default:
         return ''
     }
@@ -134,8 +157,17 @@ export function ProducerCard({
     </span>
   )
 
+  const displayAttachButton = () => {
+    return (
+      <button type={'button'} className={'btn primary-btn'} onClick={() => attachProducer(producerId)}>
+        Demander le rattachement <Plus />
+      </button>
+    )
+  }
+
   return (
     <div className="col-12" key={producerId}>
+      <GenericModal visible={visible} toggle={toggle} options={options} animation={false}></GenericModal>
       <div className="card card-margin">
         <h5 className="card-header">
           <div className="d-flex justify-content-between align-items-center">
@@ -163,6 +195,13 @@ export function ProducerCard({
                   <Trash />
                 </button>
               </div>
+            )}
+            {showAttachButton && !producer['linked_producer_status'] && displayAttachButton()}
+            {attachLoading && (
+              <div className="outer-loader-container" role="status">
+                <Loader size={'sm'} fullScreen={false}></Loader>
+              </div>
+
             )}
           </div>
         </h5>
