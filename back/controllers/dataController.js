@@ -44,7 +44,9 @@ let cache = {}
 const callCatalog = async (url, req, reply) => {
   const fun = 'callCatalog'
   try {
-    if (cache[url]) return reply ? reply.status(200).send(cache[url]) : cache[url]
+    // altered to consider query parameters changing
+    let checkUrl = req?.url ? req.url : url
+    if (cache[checkUrl]) return reply ? reply.status(200).send(cache[checkUrl]) : cache[checkUrl]
     const res = await axios.get(getCatalogUrlAndParams(url, req), getCatalogHeaders())
     const data = res.data
     cache[url] = data
@@ -111,6 +113,17 @@ export const searchPortalOrganizationsCatalog = (req, reply) => {
   } catch (err) {
     return treatAxiosError(err, CATALOG, req, reply)
   }
+}
+
+export const attachCatalogOrganization = (req, reply) => {
+  const id = req?.params?.id
+  if (!!id) {
+    try {
+      callCatalog(getCatalogAdminPath('/portal/attach/organizations', id), req, reply)
+    } catch (err) {
+      return treatAxiosError(err, CATALOG, req, reply)
+    }
+  } else throw Error('ID non fournit')
 }
 
 export async function getInitData(req, reply) {

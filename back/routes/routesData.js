@@ -16,6 +16,7 @@ import {
   searchPortalOrganizationsCatalog,
   getThemeByLang,
   testPortalConnection,
+  attachCatalogOrganization,
 } from '../controllers/dataController.js'
 import { expressErrorHandler } from '../controllers/errorHandler.js'
 import {
@@ -47,6 +48,9 @@ catalogApi.get('/licences', getLicences)
 catalogApi.get('/portal/test', testPortalConnection)
 
 // TODO : propagate res.status
+catalogApi.get(`/portal/organizations/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), getPortalOrganizationCatalogFromId)
+catalogApi.get(`/portal/organizations`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), searchPortalOrganizationsCatalog)
+catalogApi.post('/portal/attach/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), attachCatalogOrganization)
 catalogApi.get(`/counts`, getCounts)
 catalogApi.get(`/:objectType`, getObjectList)
 catalogApi.get(`/:objectType/search`, searchObjects)
@@ -55,6 +59,4 @@ catalogApi.put(`/:objectType`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), putObject
 catalogApi.get(`/:objectType/:id`, getObjectById)
 catalogApi.delete(`/:objectType/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), deleteObject)
 catalogApi.delete(`/:objectType`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), deleteObjects)
-catalogApi.get(`/portal/organizations/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), getPortalOrganizationCatalogFromId)
-catalogApi.get(`/portal/organizations`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), searchPortalOrganizationsCatalog)
 catalogApi.use((err, req, reply, next) => expressErrorHandler(err, req, reply, next))
