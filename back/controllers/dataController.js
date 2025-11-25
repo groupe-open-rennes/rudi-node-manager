@@ -105,7 +105,7 @@ export const getPortalOrganizationCatalogFromId = (req, reply) => {
     } catch (err) {
       return treatAxiosError(err, CATALOG, req, reply)
     }
-  } else throw Error('ID non fournit')
+  }
 }
 export const searchPortalOrganizationsCatalog = (req, reply) => {
   try {
@@ -123,7 +123,7 @@ export const attachCatalogOrganization = (req, reply) => {
     } catch (err) {
       return treatAxiosError(err, CATALOG, req, reply)
     }
-  } else throw Error('ID non fournit')
+  }
 }
 
 export async function getInitData(req, reply) {
