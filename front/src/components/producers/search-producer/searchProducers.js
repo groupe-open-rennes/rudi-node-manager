@@ -43,7 +43,6 @@ export function SearchProducers({ handleCriteria }) {
             onSearch={(val) => updateSearchCriteria(val, 'id')}
             onChange={(e) => {
               setOrgId(e.target.value)
-              setError('')
             }}
           />
 
@@ -51,7 +50,7 @@ export function SearchProducers({ handleCriteria }) {
             value={orgName}
             name="organizationName"
             label="Nom de l'organisation à rattacher"
-            helper="Nom de l'organisation publiée sur le portail Rudi et à rattacher. Veuillez reseigner un nom et sélectionner l'organisation à rattacher dans les résultats retournés."
+            helper="Nom de l'organisation publiée sur le portail Rudi et à rattacher. Veuillez renseigner un nom et sélectionner l'organisation à rattacher dans les résultats retournés."
             onChange={(e) => setOrgName(e.target.value)}
             hasSearchButton={true}
             onSearch={(val) => updateSearchCriteria(val, 'name')}

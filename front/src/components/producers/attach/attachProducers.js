@@ -7,8 +7,7 @@ import { BackConfContext } from '../../../context/backConfContext'
 import axios from 'axios'
 import { Loader } from '../../other/loader/loader'
 
-// const PAGE_SIZE = 20
-const PAGE_SIZE = 4
+const PAGE_SIZE = 20
 
 export default function AttachProducers({ logout }) {
   const [searchResults, setSearchResults] = useState(null)
@@ -41,13 +40,16 @@ export default function AttachProducers({ logout }) {
   const attachOrganizationUrl = (id) => back?.isLoaded && back.getBackCatalog('/portal/attach/organizations', id)
 
   const handleCriteria = async ({ searchUuid, searchName }) => {
+    console.groupCollapsed('handleCriteria')
     setUuid(searchUuid)
     setName(searchName)
     setHasMore(true)
     setCurrentOffset(0)
     setSearchResults([])
-
+    console.log('searchUuid', searchUuid)
+    console.log('searchName', searchName)
     await search(searchUuid, searchName)
+    console.groupEnd()
   }
 
   const search = async (cardUuid = uuid, cardName = name) => {
@@ -55,15 +57,24 @@ export default function AttachProducers({ logout }) {
       setIsLoading(true)
     }
     try {
+      let params = {
+        sort_by: sortBy,
+        limit: PAGE_SIZE,
+        offset: currentOffset,
+      }
+      if(cardUuid){
+        params['uuid'] = cardUuid
+      }
+      if(cardName){
+        params['name'] = cardName
+      }
+      console.log(
+        'params', params
+      )
       await axios
+
         .get(searchCatalogOrganisationUrl(), {
-          params: {
-            id: cardUuid,
-            name: cardName,
-            sort_by: sortBy,
-            limit: PAGE_SIZE,
-            offset: currentOffset,
-          },
+          params: params,
         })
         .then((res) => {
           if (res.data?.total < PAGE_SIZE || res.data?.elements.length < PAGE_SIZE) {
@@ -130,7 +141,11 @@ export default function AttachProducers({ logout }) {
                 </InfiniteScroll>
             </div>
           )}
-          {isLoading && displayLoader && <Loader fullScreen={true} size={'md'}></Loader>}
+          {isLoading && displayLoader && (
+              <div className="row my-5">
+              <Loader fullScreen={false} size={'md'}></Loader>
+              </div>
+          )}
         </div>
       </div>
     </div>
