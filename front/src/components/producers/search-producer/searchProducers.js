@@ -7,7 +7,7 @@ const uuidValidator = (value) => {
     return null
   }
   const uuidRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/
-  return uuidRegex.test(value) ? null : "L'identifiant n'est pas un UUID valide"
+  return uuidRegex.test(value) ? null : "L'identifiant est invalide ou incomplet"
 }
 
 export function SearchProducers({ handleCriteria }) {
