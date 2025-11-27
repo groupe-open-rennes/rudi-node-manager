@@ -13,6 +13,8 @@ export function ProducerManagmentCard() {
   const [back, setBack] = useState(backConf)
   useEffect(() => setBack(backConf), [backConf])
 
+  const portalConnected = back?.isLoaded && back.portalConnected;
+
   const getFormObj = (obj, query) => back?.isLoaded && back.getConsole(obj, query)
 
   return (
@@ -24,9 +26,12 @@ export function ProducerManagmentCard() {
               <a href={getFormObj(objType)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary m-2">
                 Ajouter un producteur <Plus />
               </a>
-              <a target="_blank" rel="noopener noreferrer" className="btn btn-secondary m-2" href="/producer/attach">
-                Rattacher un producteur <Plus />
-              </a>
+              { portalConnected && (
+                <a target="_blank" rel="noopener noreferrer" className="btn btn-secondary m-2" href="/producer/attach">
+                  Rattacher un producteur <Plus />
+                </a>
+            )}
+
             </div>
           </div>
         </div>

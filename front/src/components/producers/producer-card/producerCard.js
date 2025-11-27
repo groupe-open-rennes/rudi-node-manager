@@ -43,6 +43,7 @@ export function ProducerCard({
   const { toggle, visible } = useGenericModal()
 
   const getFormProducer = (producer, query) => back?.isLoaded && back.getConsole(producer, query)
+  const portalConnected = back?.isLoaded && back.portalConnected;
 
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
@@ -196,7 +197,7 @@ export function ProducerCard({
                 </button>
               </div>
             )}
-            {showAttachButton && !producer['linked_producer_status'] && displayAttachButton()}
+            {portalConnected && showAttachButton && !producer['linked_producer_status'] && displayAttachButton()}
             {attachLoading && (
               <div className="outer-loader-container" role="status">
                 <Loader size={'sm'} fullScreen={false}></Loader>
