@@ -1,11 +1,11 @@
 import "./form-header.scss"
 import PropTypes from "prop-types";
 
-FormeHeader.propTypes = {
+FormHeader.propTypes = {
     title: PropTypes.string.isRequired,
 }
 
-export function FormeHeader({
+export function FormHeader({
     title,
 }) {
 

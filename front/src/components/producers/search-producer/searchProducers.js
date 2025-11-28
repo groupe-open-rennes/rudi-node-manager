@@ -1,4 +1,4 @@
-import { FormeHeader } from '../../forms/form-header/form-header'
+import { FormHeader } from '../../forms/form-header/form-header'
 import { FormInputText } from '../../forms/form-input-text/form-input-text'
 import React, { useState } from 'react'
 
@@ -32,7 +32,7 @@ export function SearchProducers({ handleCriteria }) {
     <div className="section">
       <div className="container">
         <div className="custom-form">
-          <FormeHeader title="Producteur De Données"></FormeHeader>
+          <FormHeader title="Producteur De Données"></FormHeader>
           <FormInputText
             value={orgId}
             label="Identifiant de l'organisation à rattacher"
