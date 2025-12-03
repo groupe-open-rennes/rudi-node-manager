@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { BackConfContext } from '../../context/backConfContext'
 import { Plus } from 'react-bootstrap-icons'
+import { Link } from 'react-router-dom'
 
 ProducerManagmentCard.propTypes = {
 
@@ -27,11 +28,10 @@ export function ProducerManagmentCard() {
                 Ajouter un producteur <Plus />
               </a>
               { portalConnected && (
-                <a target="_blank" rel="noopener noreferrer" className="btn btn-secondary m-2" href="/producer/attach">
-                  Rattacher un producteur <Plus />
-                </a>
+                <Link to="./attach" target="_blank" >
+                  <button className="btn btn-secondary m-2">Attacher un producteur <Plus /> </button>
+                </Link>
             )}
-
             </div>
           </div>
         </div>
