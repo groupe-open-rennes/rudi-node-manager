@@ -28,7 +28,7 @@ export function ProducerManagmentCard() {
                 Ajouter un producteur <Plus />
               </a>
               { portalConnected && (
-                <Link to="./attach">
+                <Link to="/producer-attach" target="_blank">
                   <button className="btn btn-secondary m-2">Attacher un producteur <Plus /> </button>
                 </Link>
             )}
