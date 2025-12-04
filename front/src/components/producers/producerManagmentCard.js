@@ -3,9 +3,7 @@ import { BackConfContext } from '../../context/backConfContext'
 import { Plus } from 'react-bootstrap-icons'
 import { Link } from 'react-router-dom'
 
-ProducerManagmentCard.propTypes = {
-
-}
+ProducerManagmentCard.propTypes = {}
 
 export function ProducerManagmentCard() {
   const objType = 'organizations'
@@ -14,7 +12,7 @@ export function ProducerManagmentCard() {
   const [back, setBack] = useState(backConf)
   useEffect(() => setBack(backConf), [backConf])
 
-  const portalConnected = back?.isLoaded && back.portalConnected;
+  const portalConnected = back?.isLoaded && back.portalConnected
 
   const getFormObj = (obj, query) => back?.isLoaded && back.getConsole(obj, query)
 
@@ -27,16 +25,22 @@ export function ProducerManagmentCard() {
               <a href={getFormObj(objType)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary m-2">
                 Ajouter un producteur <Plus />
               </a>
-              { portalConnected && (
-                <Link to="producer-attach" target="_blank">
-                  <button className="btn btn-secondary m-2">Attacher un producteur <Plus /> </button>
+              {portalConnected && (
+                <Link to="/producer-attach" target="_blank">
+                  <button className="btn btn-secondary m-2">
+                    Attacher un producteur <Plus />{' '}
+                  </button>
                 </Link>
-            )}
+              )}
+              {portalConnected && (
+                <a href="producer-attach" target="_blank" className="btn btn-secondary m-2">
+                  Attacher un producteur a <Plus />{' '}
+                </a>
+              )}
             </div>
           </div>
         </div>
       </div>
     </div>
-
   )
 }
