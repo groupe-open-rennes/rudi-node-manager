@@ -26,29 +26,40 @@ export function ProducerManagmentCard() {
                 Ajouter un producteur <Plus />
               </a>
               {portalConnected && (
-                <Link to="/producer-attach" target="_blank">
+                <Link to="/producer-attach">
                   <button className="btn btn-secondary m-2">
                     Attacher un producteur <Plus />{' '}
                   </button>
                 </Link>
               )}
               {portalConnected && (
-                <Link to="../producer-attach" target="_blank">
+                <Link to="../producer-attach">
                   <button className="btn btn-secondary m-2">
                     Attacher un producteur bis <Plus />{' '}
                   </button>
                 </Link>
               )}
               {portalConnected && (
-                <a href="producer-attach" target="_blank" className="btn btn-secondary m-2">
+                <Link to="producer-attach">
+                  <button className="btn btn-secondary m-2">
+                    Attacher un producteur ters <Plus />{' '}
+                  </button>
+                </Link>
+              )}
+              {portalConnected && (
+                <a href="producer-attach" className="btn btn-secondary m-2">
                   Attacher un producteur a <Plus />{' '}
                 </a>
               )}
-
               {portalConnected && (
-                <a href="../producer-attach" target="_blank" className="btn btn-secondary m-2">
+                <a href="../producer-attach" className="btn btn-secondary m-2">
                   Attacher un producteur a bis
                   <Plus />{' '}
+                </a>
+              )}
+              {portalConnected && (
+                <a href="producer-attach" className="btn btn-secondary m-2">
+                  Attacher un producteur a ters <Plus />{' '}
                 </a>
               )}
             </div>
