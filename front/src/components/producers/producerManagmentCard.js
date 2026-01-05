@@ -33,18 +33,9 @@ export function ProducerManagmentCard() {
                 </Link>
               )}
               {portalConnected && (
-                <Link to="/producer-attach" target="_blank" rel="noopener noreferrer">
-                  <button className="btn btn-secondary m-2">
-                    Attacher un producteur blank nereferrer <Plus />{' '}
-                  </button>
-                </Link>
-              )}
-              {portalConnected && (
-                <Link to="/producer-attach" target="_blank">
-                  <button className="btn btn-secondary m-2">
-                    Attacher un producteur blank <Plus />{' '}
-                  </button>
-                </Link>
+                <a href="producer-attach" target="_blank" rel="noopener noreferrer" className="btn btn-secondary m-2">
+                  Attacher un producteur a blank noopener noreferrer <Plus />{' '}
+                </a>
               )}
             </div>
           </div>
