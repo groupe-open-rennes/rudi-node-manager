@@ -5,13 +5,7 @@
     "commonjs": true,
     "es2021": true
   },
-  "ignorePatterns": [
-    "**/*.spec.js",
-    "**/*.test.js",
-    "**/node_modules/*",
-    "**/coverage/*",
-    "**/front/*"
-  ],
+  "ignorePatterns": ["**/*.spec.js", "**/*.test.js", "**/node_modules/*", "**/coverage/*", "**/front/*"],
   "parserOptions": {
     "ecmaFeatures": { "jsx": true },
     "ecmaVersion": "latest"
@@ -31,10 +25,8 @@
     "no-self-assign": "warn",
     "no-self-compare": "warn",
     "no-undef": "error",
-    "space-before-function-paren": [
-      "error",
-      { "anonymous": "always", "named": "never", "asyncArrow": "always" }
-    ],
+    "react/react-in-jsx-scope": "off",
+    "space-before-function-paren": ["error", { "anonymous": "always", "named": "never", "asyncArrow": "always" }],
     "unused-imports/no-unused-imports": "warn",
     "unused-imports/no-unused-vars": [
       "warn",

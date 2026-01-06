@@ -25,7 +25,7 @@ import {
   statusOK,
   UnauthorizedError,
 } from '../utils/errors.js'
-import { getContext, logD, logE, logI, logV } from '../utils/logger.js'
+import { logD, logE, logI, logV } from '../utils/logger.js'
 
 logD('sqlite3.VERSION:', VERSION)
 
@@ -43,6 +43,7 @@ export const TBL_USER_ROLES = 'User_Roles'
 // -------------------------------------------------------------------------------------------------
 const dbOpen = () => {
   const fun = 'dbOpen'
+  logD(mod, fun)
   const db = new Database(DB_FILE, OPEN_READWRITE, (err) => {
     if (err) {
       logE(mod, fun, err)
@@ -67,6 +68,7 @@ export { _dbClose as dbClose }
 
 export function dbOpenOrCreate() {
   const fun = 'dbOpenOrCreate'
+  logD(mod, fun, `DB_FILE=${DB_FILE}`)
   return new Promise((resolve, reject) => {
     const db = new Database(DB_FILE, (err) => {
       if (err) {
@@ -226,7 +228,12 @@ export function dbCreateUserCheckExists(openedDb, user, silent = false) {
             return reject(err)
           }
           if (!silent)
-            logI(mod, fun, `${TBL_USERS} : user created: '${username}'`, getContext(null, { opType: 'post_user' }))
+            logI(
+              mod,
+              fun,
+              `${TBL_USERS} : user created: '${username}'`
+              //  getContext(null, { opType: 'post_user' })
+            )
           db.get(`SELECT * FROM ${TBL_USERS} where username = ?`, [username], (err, userInfo) => {
             if (!openedDb) dbClose(db)
             if (err) {
@@ -273,7 +280,12 @@ export function dbCreateUser(openedDb, userInfo) {
         logE(mod, fun + '.insert', err.message)
         return reject(err)
       }
-      logI(mod, fun, `(${TBL_USERS}) user created: '${username}'`, getContext(null, { opType: 'post_user' }))
+      logI(
+        mod,
+        fun,
+        `(${TBL_USERS}) user created: '${username}'`
+        //  getContext(null, { opType: 'post_user' })
+      )
       db.get(`SELECT * FROM ${TBL_USERS} where username = ?`, [username], (err, row) => {
         if (!openedDb) dbClose(db)
         if (err) {
@@ -333,7 +345,12 @@ export function dbUpdatePasswordWithField(openedDb, key, val, password) {
         logE(mod, fun, err.message)
         return reject(err.message)
       }
-      logI(mod, fun, `${TBL_USERS}: password reset for user '${val}'`, getContext(null, { opType: 'put_password' }))
+      logI(
+        mod,
+        fun,
+        `${TBL_USERS}: password reset for user '${val}'`
+        // getContext(null, { opType: 'put_password' })
+      )
       resolve({ key: val })
     })
   })
@@ -350,7 +367,12 @@ export function dbDeleteUserWithId(openedDb, id, silent = false) {
         return reject(err)
       }
       if (!silent)
-        logI(mod, fun, `${TBL_USERS} : A row was deleted with id ${id}`, getContext(null, { opType: 'delete_user_id' }))
+        logI(
+          mod,
+          fun,
+          `${TBL_USERS} : A row was deleted with id ${id}`
+          // getContext(null, { opType: 'delete_user_id' })
+        )
       resolve({ id })
     })
   })
@@ -370,8 +392,8 @@ export function dbDeleteUserWithName(openedDb, name, silent = false) {
         logI(
           mod,
           fun,
-          `${TBL_USERS} : A row was deleted with name ${name}`,
-          getContext(null, { opType: 'delete_user_name' })
+          `${TBL_USERS} : A row was deleted with name ${name}`
+          // getContext(null, { opType: 'delete_user_name' })
         )
       resolve({ name })
     })
@@ -394,8 +416,8 @@ export function dbCreateRoles(openedDb, roles) {
           logI(
             mod,
             fun,
-            `(${TBL_ROLES}) A role has been created with name '${role.role}'`,
-            getContext(null, { opType: 'add_role' })
+            `(${TBL_ROLES}) A role has been created with name '${role.role}'`
+            // getContext(null, { opType: 'add_role' })
           )
         })
       })
@@ -558,8 +580,8 @@ export function dbDeleteUserRole(openedDb, userId, role) {
       logI(
         mod,
         fun,
-        `${TBL_USER_ROLES}: A role was deleted with userId ${userId} and role '${role}'`,
-        getContext(null, { opType: 'delete_userRole' })
+        `${TBL_USER_ROLES}: A role was deleted with userId ${userId} and role '${role}'`
+        // getContext(null, { opType: 'delete_userRole' })
       )
       resolve({ userId, role })
     })
@@ -590,8 +612,8 @@ export function dbCreateUserRole(openedDb, { userId, username, role }) {
         logI(
           mod,
           fun,
-          `(${TBL_USER_ROLES}) A row was inserted with userId ${userId} and role '${role}'`,
-          getContext(null, { opType: 'post_userRole' })
+          `(${TBL_USER_ROLES}) A row was inserted with userId ${userId} and role '${role}'`
+          // getContext(null, { opType: 'post_userRole' })
         )
         resolve({ userId, role })
       })
