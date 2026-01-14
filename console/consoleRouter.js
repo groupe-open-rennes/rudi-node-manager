@@ -35,7 +35,7 @@ consoleRouter.use('/dependencies/leaflet', staticDependency('leaflet'))
 // -------------------------------------------------------------------------------------------------
 // Main routes
 // -------------------------------------------------------------------------------------------------
-consoleRouter.get('/?(metadata)?', staticPublicFile('metadata.html'))
+consoleRouter.get('/{metadata}', staticPublicFile('metadata.html'))
 consoleRouter.get('/contacts', staticPublicFile('contact.html'))
 consoleRouter.get('/organizations', staticPublicFile('organization.html'))
 consoleRouter.get('/pub_keys', staticPublicFile('publicKey.html'))

@@ -1,12 +1,13 @@
 {
   "root": true,
   "ignorePatterns": ["**/*.spec.js", "**/*.test.js", "**/node_modules/**", "build/**"],
-  "extends": ["google", "prettier", "plugin:react/recommended", "../.eslintrc"],
+  "extends": ["google", "prettier", "plugin:react/jsx-runtime", "../.eslintrc"],
   "parserOptions": {
     "sourceType": "module"
   },
   "rules": {
     "no-unused-vars": "off",
+    "react/react-in-jsx-scope": "off",
     "unused-imports/no-unused-imports": "warn",
     "unused-imports/no-unused-vars": [
       "warn",
