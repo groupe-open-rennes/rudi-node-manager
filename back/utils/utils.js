@@ -89,9 +89,10 @@ export function toInt(str) {
  */
 export function beautify(jsonObject, option) {
   try {
+    if (typeof jsonObject == 'string') return jsonObject
     return `${JSON.stringify(jsonObject, null, option).replace(/\\"/g, '"')}${option != null ? '\n' : ''}`
   } catch {
-    return `${inspect(jsonObject)}`
+    return `${inspect(jsonObject, false)}`
   }
 }
 
