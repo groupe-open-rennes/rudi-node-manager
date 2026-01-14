@@ -89,10 +89,9 @@ export function toInt(str) {
  */
 export function beautify(jsonObject, option) {
   try {
-    if (typeof jsonObject == 'string') return jsonObject
     return `${JSON.stringify(jsonObject, null, option).replace(/\\"/g, '"')}${option != null ? '\n' : ''}`
   } catch {
-    return `${inspect(jsonObject, false)}`
+    return `${inspect(jsonObject)}`
   }
 }
 
@@ -186,7 +185,7 @@ export const getNodeModulesLib = (lib) => {
     let libPath = pathJoin(nodMod, lib)
     if (existsSync(libPath)) return libPath
   } catch {
-    // console.debug(`D [getNodeModulesLib] Lib not found at ${libPath}`)
+    console.debug(`D [getNodeModulesLib] Lib not found at ${libPath}`)
   }
   try {
     for (const lookupFolderLevel of ['', '..', '../..']) {

@@ -166,7 +166,7 @@ export class MetadataForm extends RudiForm {
     if (!outputValue.access_condition.confidentiality) outputValue.access_condition.confidentiality = {}
     outputValue.access_condition.confidentiality.restricted_access = Boolean(
       (outputValue.restricted_access && hasLocalFile) ||
-        originalValue?.access_condition?.confidentiality?.restricted_access
+      originalValue?.access_condition?.confidentiality?.restricted_access
     )
 
     // REMOVE OR API FAIL WHEN PUBLISHING NEW RESTRICTED DATA

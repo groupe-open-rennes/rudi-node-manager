@@ -268,8 +268,11 @@ export class RudiForm {
         this.customForm.readOnly()
         this.setValue(value)
       } else {
+        // if (this.isDev) this.ok(here, `Creating a new metadata`)
+        // this.customForm?.htmlController['organization_id']
         this.customForm?.htmlController?.organization_id?.toggleAttribute('disabled')
       }
+      // this.ok(here)
     } catch (e) {
       this.ko(here)
       console.error(`E [${here}]`, e)
