@@ -18,7 +18,7 @@ import CatalogueMetadata from './components/catalogue/catalogueMetadata'
 import CatalogueContact from './components/generic/catalogueContact'
 import CatalogueProducer from './components/producers/catalogueProducer'
 import CataloguePubKeys from './components/generic/cataloguePubKeys'
-import CatalogueReports from './components/generic/catalogueReports'
+import ReportsPage from './components/reports/reportsPage'
 import ModalProvider from './components/modals/genericModalContext'
 import CatalogueUser from './components/users/catalogueUser'
 import Visualisation from './components/visualisation/visualisation'
@@ -210,7 +210,7 @@ export default function App() {
           <Route path="producer-attach" element={<AttachProducers logout={logout} />} />
           <Route path="contact" element={<CatalogueContact editMode={isEditor} logout={logout} />} />
           <Route path="pub_key" element={<CataloguePubKeys editMode={isAdmin} logout={logout} />} />
-          <Route path="report" element={<CatalogueReports editMode={isAdmin} logout={logout} />} />
+          <Route path="report" element={<ReportsPage editMode={isAdmin} logout={logout} />} />
           <Route path="licence" element={<CatalogueLicence logout={logout} />} />
           <Route path="show/:id" element={<Visualisation logout={logout} />} />
           <Route path="show" element={<Visualisation logout={logout} />} />
