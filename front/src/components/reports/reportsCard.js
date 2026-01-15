@@ -49,6 +49,26 @@ export function ReportsCard({
   const reportId = report[propId]
   const reportTitle = report[propName]
 
+  const mapObjectType = {
+    DATASET: {
+      PUT: ' Modification de jeu de donnée',
+      POST: ' Publication de jeu de donnée',
+      DELETE: ' Suppression de jeu de donnée',
+      DEFAULT: ' Jeu de donnée',
+    },
+    ORGANIZATION: {
+      PUT: " Modification d'organisation",
+      POST: " Création d'organisation",
+      DELETE: " Suppression d'organisation",
+      DEFAULT: ' Organisation',
+    },
+    LINKED_PRODUCER: {
+      ATTACH: " Rattachement d'une organisation",
+      DETACH: " Détachement d'une organisation",
+      DEFAULT: " Liaison d'une organisation",
+    },
+  }
+
   /**
    * Call for organization deletion
    * @param {*} id Identifier of the object to delete
@@ -72,42 +92,7 @@ export function ReportsCard({
   }
 
   function getObjectType(objectType, method) {
-    switch (objectType) {
-      case 'DATASET': {
-        if(method === 'PUT'){
-          return ' Modification de jeu de donnée'
-        }
-        else if(method === 'POST'){
-          return ' Publication de jeu de donnée'
-        }
-        else if(method === 'DELETE'){
-          return ' Suppression de jeu de donnée'
-        }
-        return ' Jeu de donnée'
-      }
-      case 'ORGANIZATION': {
-        if(method === 'PUT'){
-          return ' Modification d\'organisation'
-        }
-        else if(method === 'POST'){
-          return ' Création d\'organisation'
-        }
-        else if(method === 'DELETE'){
-          return ' Suppression d\'organisation'
-        }
-        return ' Organisation'
-      }
-      case 'LINKED_PRODUCER': {
-        if(method === 'ATTACH'){
-          return ' Rattachement d\'une organisation'
-        }
-        else if(method === 'DETACH'){
-          return ' Détachement d\'une organisation'
-        }
-        return ' Liaison d\'une organisation'
-      }
-      default: return 'Rapport interne'
-    }
+    return mapObjectType[objectType]?.[method] || mapObjectType[objectType]?.DEFAULT || 'Rapport interne'
   }
 
   const displayObjectType = () => {
