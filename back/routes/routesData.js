@@ -12,6 +12,7 @@ import {
   getCatalogVersion,
   getEnum,
   getLicences,
+  getPortalOrganizationCatalog,
   getThemeByLang,
   testPortalConnection,
 } from '../controllers/dataController.js'
@@ -53,4 +54,5 @@ catalogApi.put(`/:objectType`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), putObject
 catalogApi.get(`/:objectType/:id`, getObjectById)
 catalogApi.delete(`/:objectType/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), deleteObject)
 catalogApi.delete(`/:objectType`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), deleteObjects)
+catalogApi.get(`/portal/organizations/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), getPortalOrganizationCatalog)
 catalogApi.use((err, req, reply, next) => expressErrorHandler(err, req, reply, next))
