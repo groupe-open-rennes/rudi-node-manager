@@ -252,6 +252,7 @@ a {
 .status-pill {
   @extend .badge;
   @extend .rounded-pill;
+  margin-left: 10px;
 }
 .align-pill-right {
   margin-right: 10px;
@@ -370,4 +371,33 @@ a {
 .on-right-box {
   float: right;
   padding: 0.5em 0.2em 0 0;
+}
+
+.primary-btn {
+  background-color: $primary;
+  color: white;
+  border-color: white;
+}
+
+.primary-btn:hover{
+  border-color: $primary;
+  background-color: $primary;
+  color: white;
+}
+
+.primary-btn:disabled{
+  border-color: white;
+  background-color: silver;
+
+  color: black;
+}
+
+.btn-danger,
+.btn-danger:disabled {
+  border-color: white;
+}
+
+.text-bg-rudi {
+  background-color: #e6f1fd;
+  color: $primary;
 }

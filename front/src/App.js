@@ -16,7 +16,7 @@ import Register, { showPill as showPillRegister } from './components/login/regis
 import CatalogueLicence from './components/catalogue/catalogueLicence'
 import CatalogueMetadata from './components/catalogue/catalogueMetadata'
 import CatalogueContact from './components/generic/catalogueContact'
-import CatalogueProducer from './components/generic/catalogueProducer'
+import CatalogueProducer from './components/producers/catalogueProducer'
 import CataloguePubKeys from './components/generic/cataloguePubKeys'
 import CatalogueReports from './components/generic/catalogueReports'
 import ModalProvider from './components/modals/genericModalContext'
