@@ -304,8 +304,7 @@
       },
       "metadata_provider": "metadata_provider",
       "metadata_contacts": "metadata_contacts"
-    },
-    "dataset_update_frequency": "dataset_update_frequency"
+    }
   },
   "fragmentSet": {
     "fr": {
@@ -315,12 +314,6 @@
       "temporal_spread": { "textContent": "Étendue temporelle" },
       "dataset_size": { "textContent": "Taille de la donnée" },
       "dataset_dates": { "textContent": "Dates de référence" },
-      "dataset_update_frequency": {
-        "attr": {
-          "label": "Fréquence de mise à jour du jeu de données",
-          "helper": "Fréquence de mise à jour du jeu de données"
-        }
-      },
       "access_condition": { "textContent": "Contraintes d'accès" },
       "confidentiality": { "textContent": "Confidentialité" },
       "licence": { "textContent": "Licence" },
@@ -474,8 +467,7 @@
       "producer": "opt_organizations",
       "contacts": "opt_contacts",
       "resource_languages": "opt_language",
-      "storage_status": { "init": { "setOptions": ["$storagestatus"] } },
-      "dataset_update_frequency": { "init": { "setOptions": ["$updatefrequencies"] } },
+      "storage_status": { "init": { "setOptions": ["$storagestatus"] } }, 
       "restricted_access": { "init": { "setOptions": ["$publickeys"] } },
       "licence_type": { "init": { "setOptions": ["$licencetypes", true] } },
       "licence_label": { "init": { "setOptions": ["$licences", true] } },
