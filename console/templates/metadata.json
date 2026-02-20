@@ -149,11 +149,6 @@
               ]
             },
             {
-              "id": "@dataset_update_frequency",
-              "tag": "select-input",
-              "class": ["col", "s4"]
-            },
-            {
               "id": "@storage_status",
               "tag": "select-input",
               "class": ["col", "s4", "m4"],
