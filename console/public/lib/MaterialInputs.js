@@ -2,7 +2,7 @@
 
 import { sanitizeBoth } from '../js/sanitizer.js'
 
-import { buildCKEditor } from '../js/ckeditor.js'
+import { buildCKEditor, buildDecoupledEditor } from '../js/ckeditor.js'
 
 /**
  * @author Florian Desmortreux
@@ -871,6 +871,31 @@ textarea {
 
 :host(:focus) span[selected]:after {
     background: rgba(var(--primary-rgb), 0.6);
+}
+
+/* Editor elements */
+
+.editor-container,
+.editor-toolbar-container,
+.editor-light-host,
+::slotted([slot="editor-ui"]) {
+    display: block;
+    width: 100%;
+}
+
+.editor-container {
+    min-height: 10em;
+}
+
+.editor-toolbar-container {
+    min-height: 2.5em;
+    padding: 0.25em 0;
+}
+
+.editor-light-host,
+::slotted([slot="editor-ui"]) {
+    min-height: 8em;
+    padding: 0.25em 0;
 }
 `
 
@@ -2506,11 +2531,30 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
       this.focusEditor()
     })
 
-    // Create CKEditor container (remplace le textarea)
-    this.editorContainer = document.createElement('div')
-    this.editorContainer.classList.add('editor-container')
+    // Container for the CKEditor editable area (where the user types rich text)
+    this.editorHost = document.createElement('div')
+    this.editorHost.classList.add('editor-container')
 
+    // Container for the CKEditor toolbar (bold, italic, lists, etc.)
+    this.toolbarContainer = document.createElement('div')
+    this.toolbarContainer.classList.add('editor-toolbar-container')
+
+    // Light DOM host: placed in the light DOM of this web component with a slot attribute.
+    // CKEditor requires its editable area to live in the light DOM (not shadow DOM)
+    // so that its styles and event handling work correctly.
+    this.editorLightHost = document.createElement('div')
+    this.editorLightHost.classList.add('editor-light-host')
+    this.editorLightHost.setAttribute('slot', 'editor-ui')
+
+    // Shadow DOM slot: projects the light DOM editorLightHost into the shadow DOM layout.
+    // This bridges the gap between CKEditor (light DOM) and the component's shadow DOM rendering.
+    this.editorSlot = document.createElement('slot')
+    this.editorSlot.setAttribute('name', 'editor-ui')
+
+    this.editor = null
     this.editorReady = false
+
+    this._ckStylesLoaded = false
 
     // Init action
     this.action.textContent = 'add'
@@ -2526,7 +2570,7 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     tabBar.appendChild(this.tabsWrapper)
     tabBar.appendChild(this.action)
     this.content.appendChild(tabBar)
-    this.content.appendChild(this.editorContainer)
+    this.content.appendChild(this.editorSlot)
     this.wrapper.prepend(this.content)
 
     tabBar.addEventListener('keydown', (event) => {
@@ -2554,22 +2598,69 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     })
   }
 
+  syncEditorInteractivity() {
+    if (!this.editor || !this.editorReady) 
+      { 
+        return 
+      }
+
+    const readOnly = this.hasAttribute('readonly') || this.hasAttribute('disabled')
+
+    try {
+      if (readOnly) this.editor.enableReadOnlyMode('multi-rich-textarea')
+      else this.editor.disableReadOnlyMode('multi-rich-textarea')
+    } catch {
+      // Ignore if API not available
+    }
+
+    const editableEl =
+      (typeof this.editor.ui?.getEditableElement === 'function' && this.editor.ui.getEditableElement()) ||
+      this.editor.ui?.view?.editable?.element
+
+    if (editableEl) {
+      editableEl.style.pointerEvents = readOnly ? 'none' : 'auto'
+      editableEl.style.userSelect = readOnly ? 'none' : 'text'
+      editableEl.tabIndex = readOnly ? -1 : 0
+      if (!readOnly) {
+        editableEl.setAttribute('contenteditable', 'true')
+      }
+
+      if (!editableEl.__multiRichTextAreaFocusBound) {
+        editableEl.__multiRichTextAreaFocusBound = true
+        editableEl.addEventListener('mousedown', (event) => {
+          event.stopPropagation()
+        })
+        editableEl.addEventListener('click', (event) => {
+          event.stopPropagation()
+          this.focusEditor()
+        })
+      }
+    }
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    super.attributeChangedCallback(name, oldValue, newValue)
+    if (name === 'readonly' || name === 'disabled') {
+      this.syncEditorInteractivity()
+    }
+  }
+
   focusEditor() {
-    if (this.editorContainer && this.editorReady) {
-      this.editorContainer.editing.view.focus()
+    if (this.editor && this.editorReady) {
+      this.editor.editing.view.focus()
     }
   }
 
   saveCurrentTabContent() {
-    if (this.currentTab && this.editorContainer && this.editorReady) {
-      this.currentTab.text = this.editorContainer.getData()
+    if (this.currentTab && this.editor && this.editorReady) {
+      this.currentTab.text = this.editor.getData()
     }
   }
 
   loadTabContent(tab) {
-    if (this.editorContainer && this.editorReady) {
+    if (this.editor && this.editorReady) {
       const content = tab.text ?? ''
-      this.editorContainer.setData(content)
+      this.editor.setData(content)
     }
   }
 
@@ -2663,8 +2754,8 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     this.action.show(tab.tabValue)
 
     if (!this.currentTab) {
-      if (this.editorContainer && this.editorReady) {
-        this.editorContainer.setData('')
+      if (this.editor && this.editorReady) {
+        this.editor.setData('')
       }
       this.content.toggleAttribute('empty', true)
     } else {
@@ -2714,6 +2805,10 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
   }
 
   async loadCKEditorStyles() {
+    if (this._ckStylesLoaded) {
+      return
+    }
+    
     const cssFiles = [
       './dependencies/ckeditor5/ckeditor5.css',
       './dependencies/ckeditor5/ckeditor5-editor.css',
@@ -2728,10 +2823,140 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
         const style = document.createElement('style')
         style.textContent = cssText
         this.shadowRoot.appendChild(style)
+
+        const fileName = cssFile.split('/').pop()?.replace(/[^a-z0-9_-]/gi, '_')
+        const globalStyleId = `ck-editor-global-${fileName}`
+        if (!document.getElementById(globalStyleId)) {
+          const globalStyle = document.createElement('style')
+          globalStyle.id = globalStyleId
+          globalStyle.textContent = cssText
+          document.head.appendChild(globalStyle)
+        }
+
+        let toolbarStyle = document.getElementById('ck-editor-lightdom-toolbar')
+        if (!toolbarStyle) {
+          toolbarStyle = document.createElement('style')
+          toolbarStyle.id = 'ck-editor-lightdom-toolbar'
+        }
+        toolbarStyle.textContent = `
+            .editor-light-host {
+              display: flex;
+              flex-direction: column;
+              width: 100%;
+              min-height: 8em;
+              box-sizing: border-box;
+            }
+            .editor-light-host .editor-toolbar-container { display: block; width: 100%; min-height: 2.5em; }
+            .editor-light-host .editor-container {
+              display: block;
+              width: 100%;
+              min-height: 10em;
+              box-sizing: border-box;
+            }
+            .editor-light-host .ck-editor,
+            .editor-light-host .ck-editor__main {
+              display: block;
+              width: 100%;
+              box-sizing: border-box;
+            }
+            .editor-light-host .ck-editor__editable {
+              min-height: 10em;
+              box-sizing: border-box;
+            }
+            /*
+             * Layout-only overrides for CKEditor UI rendered in light DOM.
+             * Purpose: prevent the toolbar from collapsing to ~1px height when
+             * host page CSS accidentally hides CKEditor toolbar children.
+             */
+            .editor-light-host .ck-toolbar {
+              display: flex !important;
+              flex-wrap: wrap;
+              align-items: center;
+              width: 100%;
+              min-height: 2.5em;
+              box-sizing: border-box;
+              overflow: visible;
+            }
+            .editor-light-host .ck-toolbar__items,
+            .editor-light-host .ck-toolbar__group {
+              display: flex !important;
+              flex-wrap: wrap;
+              align-items: center;
+              min-height: 2em;
+            }
+            .editor-light-host .ck-toolbar__item,
+            .editor-light-host .ck-toolbar__separator {
+              display: flex !important;
+              align-items: center;
+            }
+            .editor-light-host .ck-button {
+              display: inline-flex !important;
+              align-items: center;
+              min-height: 2em;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+
+            /* Icons-only toolbar (hide text labels) */
+            .editor-light-host .ck-button__label {
+              display: none !important;
+            }
+            .editor-light-host .ck-button *,
+            .editor-light-host .ck-toolbar *,
+            .editor-light-host .ck-toolbar *::before,
+            .editor-light-host .ck-toolbar *::after {
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            .editor-light-host .ck-icon,
+            .editor-light-host .ck-icon svg {
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            .editor-light-host .ck-button__icon {
+              display: inline-flex !important;
+              align-items: center;
+              justify-content: center;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            .editor-light-host svg.ck-icon {
+              display: inline-block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              fill-opacity: 1 !important;
+              stroke-opacity: 1 !important;
+              overflow: visible !important;
+              filter: none !important;
+              clip-path: none !important;
+              mask: none !important;
+              transform: none !important;
+              mix-blend-mode: normal !important;
+            }
+            /* Keep SVG inner nodes paintable (avoid global CSS setting opacity to 0) */
+            .editor-light-host svg.ck-icon *,
+            .editor-light-host svg.ck-icon *::before,
+            .editor-light-host svg.ck-icon *::after {
+              visibility: visible !important;
+              opacity: 1 !important;
+              fill-opacity: 1 !important;
+              stroke-opacity: 1 !important;
+              filter: none !important;
+              clip-path: none !important;
+              mask: none !important;
+              transform: none !important;
+              mix-blend-mode: normal !important;
+            }
+          `
+        // Ensure this style wins the cascade by being last in <head>
+        document.head.appendChild(toolbarStyle)
+
       } catch (error) {
         console.warn(`Impossible de charger ${cssFile}:`, error)
       }
     }
+
+    this._ckStylesLoaded = true
   }
 
   /**
@@ -2756,17 +2981,51 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
       }
     }
 
+    // In "reduced" mode, form.css keeps elements under div[required] visible.
+    // Mirror the field's required-ness to the light-DOM host so CKEditor internals
+    // don't get hidden by the global reduced-mode selector.
+    this.editorLightHost.toggleAttribute('required', this.hasAttribute('required'))
+
+    if (!this.editorLightHost.isConnected) {
+      this.appendChild(this.editorLightHost)
+    }
+    if (!this.toolbarContainer.isConnected) {
+      this.editorLightHost.appendChild(this.toolbarContainer)
+    }
+    if (!this.editorHost.isConnected) {
+      this.editorLightHost.appendChild(this.editorHost)
+    }
+
     // Charger les styles CKEditor
     await this.loadCKEditorStyles()
 
+    if (this.editor) {
+      return
+    }
+
     try {
-      this.editorContainer = await buildCKEditor(this.editorContainer, '').finally(() => {
-        this.editorContainer.addEventListener('click', (event) => {
+      this.editor = await buildDecoupledEditor(this.editorHost, '').finally(() => {
+        this.editorHost.addEventListener('click', (event) => {
           event.stopPropagation()
           this.focusEditor()
         })
       })
       this.editorReady = true
+
+      const toolbarElement = this.editor?.ui?.view?.toolbar?.element
+      if (toolbarElement) {
+        this.toolbarContainer.innerHTML = ''
+        this.toolbarContainer.appendChild(toolbarElement)
+        toolbarElement.style.display = 'flex'
+        toolbarElement.style.flexWrap = 'wrap'
+        toolbarElement.style.alignItems = 'center'
+        toolbarElement.style.minHeight = '2.5em'
+      }
+      if (this.currentTab) {
+        this.loadTabContent(this.currentTab)
+      }
+
+      this.syncEditorInteractivity()
     } catch (error) {
       console.error('Error initializing CKEditor: ', error)
     }
@@ -2774,11 +3033,11 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
 
   disconnectedCallback() {
     // Nettoyer l'instance CKEditor quand le composant est retiré du DOM
-    if (this.editorContainer) {
-      this.editorContainer
+    if (this.editor) {
+      this.editor
         .destroy()
         .then(() => {
-          this.editorContainer = null
+          this.editor = null
           this.editorReady = false
         })
         .catch((error) => {
