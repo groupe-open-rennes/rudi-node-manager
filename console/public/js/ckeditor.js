@@ -9,6 +9,7 @@ import {
   Bold,
   ClassicEditor,
   Code,
+  DecoupledEditor,
   Essentials,
   HorizontalLine,
   Italic,
@@ -85,4 +86,10 @@ export async function buildCKEditor(target, input = '') {
   editorConfig.initialData = input
 
   return await ClassicEditor.create(target, editorConfig)
+}
+
+export async function buildDecoupledEditor(target, input = '') {
+  editorConfig.initialData = input
+
+  return await DecoupledEditor.create(target, editorConfig)
 }
