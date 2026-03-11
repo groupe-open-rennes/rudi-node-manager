@@ -126,6 +126,28 @@ export const attachCatalogOrganization = (req, reply) => {
   }
 }
 
+export const detachCatalogOrganization = (req, reply) => {
+  const id = req?.params?.id
+  if (!!id) {
+    try {
+      callCatalog(getCatalogAdminPath('/portal/detach/organizations', id), req, reply)
+    } catch (err) {
+      return treatAxiosError(err, CATALOG, req, reply)
+    }
+  }
+}
+
+export const linkedProducerHasTask = (req, reply) => {
+  const id = req?.params?.id
+  if (!!id) {
+    try {
+      callCatalog(getCatalogAdminPath('/portal/has_task/organizations', id), req, reply)
+    } catch (err) {
+      return treatAxiosError(err, CATALOG, req, reply)
+    }
+  }
+}
+
 export async function getInitData(req, reply) {
   try {
     const data = await Promise.all([getThemes(req), getCatalogPublicUrl(), getStoragePublicUrl(), getPortalUrl()])

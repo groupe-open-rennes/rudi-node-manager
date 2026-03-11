@@ -17,6 +17,8 @@ import {
   getThemeByLang,
   testPortalConnection,
   attachCatalogOrganization,
+  detachCatalogOrganization,
+  linkedProducerHasTask,
 } from '../controllers/dataController.js'
 import { expressErrorHandler } from '../controllers/errorHandler.js'
 import {
@@ -51,6 +53,8 @@ catalogApi.get('/portal/test', testPortalConnection)
 catalogApi.get(`/portal/organizations/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), getPortalOrganizationCatalogFromId)
 catalogApi.get(`/portal/organizations`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), searchPortalOrganizationsCatalog)
 catalogApi.post('/portal/attach/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), attachCatalogOrganization)
+catalogApi.post('/portal/detach/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), detachCatalogOrganization)
+catalogApi.post('/portal/has_task/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), linkedProducerHasTask)
 catalogApi.get(`/counts`, getCounts)
 catalogApi.get(`/:objectType`, getObjectList)
 catalogApi.get(`/:objectType/search`, searchObjects)
