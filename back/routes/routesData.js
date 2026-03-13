@@ -14,6 +14,7 @@ import {
   getLicences,
   getPortalOrganizationCatalogFromId,
   searchPortalOrganizationsCatalog,
+  getOrganizationsForMetadata,
   getThemeByLang,
   testPortalConnection,
   attachCatalogOrganization,
@@ -55,6 +56,7 @@ catalogApi.get(`/portal/organizations`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), 
 catalogApi.post('/portal/attach/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), attachCatalogOrganization)
 catalogApi.post('/portal/detach/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), detachCatalogOrganization)
 catalogApi.post('/portal/has_task/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), linkedProducerHasTask)
+catalogApi.get('/organizations/metadata', getOrganizationsForMetadata)
 catalogApi.get(`/counts`, getCounts)
 catalogApi.get(`/:objectType`, getObjectList)
 catalogApi.get(`/:objectType/search`, searchObjects)

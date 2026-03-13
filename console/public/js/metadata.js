@@ -47,7 +47,7 @@ export class MetadataForm extends RudiForm {
         data = await Promise.all([
           this.getPmJson('catalog/enum?lang=fr'),
           this.getPmJson('catalog/contacts'),
-          this.getPmJson('catalog/organizations'),
+          this.getPmJson('catalog/organizations/metadata'),
           this.getPmJson('catalog/pub_keys?type=rsa'),
         ])
       } catch (err) {
