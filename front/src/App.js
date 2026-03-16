@@ -20,6 +20,7 @@ import CatalogueProducer from './components/producers/catalogueProducer'
 import CataloguePubKeys from './components/generic/cataloguePubKeys'
 import ReportsPage from './components/reports/reportsPage'
 import ModalProvider from './components/modals/genericModalContext'
+import { ToastProvider } from './components/toasts/toastContext'
 import CatalogueUser from './components/users/catalogueUser'
 import Visualisation from './components/visualisation/visualisation'
 import AttachProducers from './components/producers/attach/attachProducers'
@@ -136,6 +137,7 @@ export default function App() {
     </div>
   ) : (
     <Router basename={rootUrl}>
+      <ToastProvider>
       <ModalProvider>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="modal-test"></div>
@@ -218,6 +220,7 @@ export default function App() {
           <Route path="*" element={<Navigate replace to="/" relative="path" />} />
         </Routes>
       </ModalProvider>
+      </ToastProvider>
     </Router>
   )
 }
