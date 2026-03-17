@@ -4,3 +4,18 @@
   height: 2em;
   //overflow: hidden;
 }
+
+.btn-detach {
+  background-color: #D04838;
+  color: white;
+
+  &:disabled {
+    background-color: #D8D8D8;
+    border: none;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: darken(#D04838, 10%);
+    color: white;
+  }
+}

@@ -6,13 +6,6 @@ import { CheckLg, ExclamationLg, InfoLg } from 'react-bootstrap-icons'
 
 export const ToastContext = createContext()
 
-const VARIANT_LABELS = {
-  danger: 'Erreur',
-  success: 'Succès',
-  warning: 'Attention',
-  info: 'Information',
-}
-
 const ToastIcon = ({ icon, color }) => (
   <span
     className="me-3 flex-shrink-0"
@@ -42,7 +35,7 @@ const VARIANT_ICONS = {
 const VARIANT_BG = {
   danger: '#d14838',
   success: '#004680',
-  warning: '#ffc107',
+  warning: '#004680',
   info: '#0dcaf0',
 }
 
@@ -80,7 +73,12 @@ export function useNotification() {
     [addToast]
   )
 
-  return { notify, notifyError, notifySuccess }
+  const notifyWarning = useCallback(
+    (message, delay = 6000) => addToast({ message, variant: 'warning', delay }),
+    [addToast]
+  )
+
+  return { notify, notifyError, notifySuccess, notifyWarning }
 }
 
 // -------------------------------------------------------------------------------------------------
