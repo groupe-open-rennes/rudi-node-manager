@@ -53,7 +53,9 @@ export function ProducerCard({
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
   const [showAttachButton, setShowAttachButton] = useState(!!attachUrl)
-  const [attachLoading, setAttachLoading] = useState(false )
+  const [attachLoading, setAttachLoading] = useState(false)
+  const [hasPendingTask, setHasPendingTask] = useState(producer['linked_producer_status'] === 'DETACH_IN_PROGRESS')
+  useEffect(() => setHasPendingTask(producer['linked_producer_status'] === 'DETACH_IN_PROGRESS'), [producer])
 
   const producerId = producer[propId]
   const producerName = producer[propName]
@@ -105,6 +107,7 @@ export function ProducerCard({
     axios
       .post(detachOrganizationUrl(id))
       .then(() => {
+        setHasPendingTask(true)
         notifySuccess('Votre demande a bien été soumise à l\'équipe administrative du portail.')
         refresh()
       })
@@ -143,7 +146,7 @@ export function ProducerCard({
 
   const displayEditionButton = (hideEdit) =>
     hideEdit ? (
-      <button type={'button'} className={'btn primary-btn'} disabled={hideEdit}>
+      <button type={'button'} className={'btn primary-btn btn-rudi'} disabled={hideEdit}>
         <Pencil />
       </button>
     ) : (
@@ -184,7 +187,9 @@ export function ProducerCard({
       case 'VALIDATED':
         return displaySpan('rudi', 'Rattaché')
       case 'DISENGAGED':
-        return displaySpan('muted', 'Détaché')
+        return displaySpan('rudi', 'Détaché')
+      case 'DETACH_IN_PROGRESS':
+        return displaySpan('rudi', 'Détachement en attente de validation')
       default:
         return ''
     }
@@ -217,30 +222,32 @@ export function ProducerCard({
           <div className="d-flex justify-content-between align-items-center">
             <a>{producerName}</a>
             <span className={'align-pill-right '}>
-              {producer['organization_status'] && displayValidationStatus(producer['organization_status'])}
+              {producer['organization_status'] && producer['linked_producer_status'] !== 'DISENGAGED' && displayValidationStatus(producer['organization_status'])}
               {producer['linked_producer_status'] && displayAttachmentStatus(producer['linked_producer_status'])}
             </span>
             {isEdit && (
               <div className="btn-group" role="group">
                 <button
                   type={'button'}
-                  className={'btn primary-btn'}
+                  className={'btn primary-btn btn-rudi'}
                   onClick={() => updateOrganizationFromPortal(producerId)}
                 >
                   <ArrowRepeat />
                 </button>
                 {displayEditionButton(hideEdit)}
+                {portalConnected && (
+                  <button
+                    type={'button'}
+                    className={'btn btn-detach'}
+                    onClick={() => checkHasTaskThenDetach(producerId)}
+                    disabled={hasPendingTask || producer['linked_producer_status'] !== 'VALIDATED'}
+                  >
+                    <DashLg />
+                  </button>
+                )}
                 <button
                   type={'button'}
-                  className={'btn btn-detach'}
-                  onClick={() => checkHasTaskThenDetach(producerId)}
-                  disabled={!portalConnected}
-                >
-                  <DashLg />
-                </button>
-                <button
-                  type={'button'}
-                  className="btn btn-danger"
+                  className="btn btn-danger btn-rudi"
                   onClick={() => triggerDeleteProducer(producerId)}
                   disabled={hideEdit}
                 >
