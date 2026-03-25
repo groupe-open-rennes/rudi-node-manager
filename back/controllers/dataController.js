@@ -1,3 +1,5 @@
+import { logW } from '../utils/logger.js'
+
 const mod = 'callApiSimple'
 
 // -------------------------------------------------------------------------------------------------
@@ -11,6 +13,7 @@ import axios from 'axios'
 import {
   CATALOG,
   getCatalogAdminPath,
+  getCatalogAdminUrl as getCatalogAdminApiUrl,
   getCatalogUrlAndParams,
   getHostDomain,
   getPublicBack,
@@ -21,9 +24,10 @@ import {
 
 import { getTags } from '../config/backOptions.js'
 
-import { getCatalogHeaders } from '../utils/secu.js'
+import { getCatalogHeaders, sendJsonAndTokens } from '../utils/secu.js'
 import { handleError, treatAxiosError } from './errorHandler.js'
 import { getStoragePublicUrl } from './mediaController.js'
+import { cleanErrMsg } from '../utils/utils.js'
 
 let cache = {}
 // Helper functions
@@ -126,6 +130,28 @@ export const attachCatalogOrganization = (req, reply) => {
   }
 }
 
+export const detachCatalogOrganization = (req, reply) => {
+  const id = req?.params?.id
+  if (!!id) {
+    try {
+      callCatalog(getCatalogAdminPath('/portal/detach/organizations', id), req, reply)
+    } catch (err) {
+      return treatAxiosError(err, CATALOG, req, reply)
+    }
+  }
+}
+
+export const linkedProducerHasTask = (req, reply) => {
+  const id = req?.params?.id
+  if (!!id) {
+    try {
+      callCatalog(getCatalogAdminPath('/portal/has_task/organizations', id), req, reply)
+    } catch (err) {
+      return treatAxiosError(err, CATALOG, req, reply)
+    }
+  }
+}
+
 export async function getInitData(req, reply) {
   try {
     const data = await Promise.all([getThemes(req), getCatalogPublicUrl(), getStoragePublicUrl(), getPortalUrl()])
@@ -150,5 +176,24 @@ export async function getInitData(req, reply) {
     // log.e(mod, 'getInitData', cleanErrMsg(e))
     if (reply) handleError(req, reply, e, 500, 'getInitData', 'init_data')
     else throw new Error(`Couldn't get init data: ${e.message}`)
+  }
+}
+
+export async function getOrganizationsForMetadata(req, reply) {
+  const opType = 'get_org_for_metadata'
+  try {
+    const opts = {
+      params: {
+        organization_status: 'VALIDATED',
+        linked_producer_status: 'VALIDATED',
+      },
+      ...getCatalogHeaders(),
+    }
+    const res = await axios.get(getCatalogAdminApiUrl('organizations', 'metadata'), opts)
+    return sendJsonAndTokens(req, reply, res.data)
+  } catch (err) {
+    logW(mod, opType, cleanErrMsg(err))
+    logW(mod, opType, err)
+    return treatAxiosError(err, CATALOG, req, reply)
   }
 }

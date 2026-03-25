@@ -1,12 +1,15 @@
 import React, { useContext, useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import { ArrowRepeat, Pencil, Plus, Trash } from 'react-bootstrap-icons'
+import { ArrowRepeat, DashLg, Pencil, Plus, Trash } from 'react-bootstrap-icons'
+import './producerCard.scss'
 import useDefaultErrorHandler from '../../../utils/useDefaultErrorHandler'
 import { BackConfContext } from '../../../context/backConfContext'
 import { getOptConfirm, getOptOk, ModalContext } from '../../modals/genericModalContext'
 import axios from 'axios'
 import { Loader } from '../../other/loader/loader'
 import GenericModal, { useGenericModal, useGenericModalOptions } from '../../modals/genericModal'
+import DetachProducerModal, { useDetachProducerModal } from '../../modals/detachProducerModal'
+import { useNotification } from '../../toasts/toastContext'
 
 ProducerCard.prototype = {
   editMode: PropTypes.bool,
@@ -41,6 +44,8 @@ export function ProducerCard({
   useEffect(() => setBack(backConf), [backConf])
   const { options, changeOptions } = useGenericModalOptions()
   const { toggle, visible } = useGenericModal()
+  const { isVisibleDetachModal, toggleDetachModal } = useDetachProducerModal()
+  const { notifySuccess, notifyWarning } = useNotification()
 
   const getFormProducer = (producer, query) => back?.isLoaded && back.getConsole(producer, query)
   const portalConnected = back?.isLoaded && back.portalConnected;
@@ -48,12 +53,16 @@ export function ProducerCard({
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
   const [showAttachButton, setShowAttachButton] = useState(!!attachUrl)
-  const [attachLoading, setAttachLoading] = useState(false )
+  const [attachLoading, setAttachLoading] = useState(false)
+  const [hasPendingTask, setHasPendingTask] = useState(producer['linked_producer_status'] === 'DETACH_IN_PROGRESS')
+  useEffect(() => setHasPendingTask(producer['linked_producer_status'] === 'DETACH_IN_PROGRESS'), [producer])
 
   const producerId = producer[propId]
   const producerName = producer[propName]
 
   const updatePortalOrganizationUrl = (suffix) => back?.isLoaded && back.getBackCatalog('portal/organizations', suffix)
+  const detachOrganizationUrl = (id) => back?.isLoaded && back.getBackCatalog('/portal/detach/organizations', id)
+  const hasTaskUrl = (id) => back?.isLoaded && back.getBackCatalog('/portal/has_task/organizations', id)
 
   const updateOrganizationFromPortal = (id) => {
     axios
@@ -87,11 +96,43 @@ export function ProducerCard({
       .catch((err) => {
         defaultErrorHandler(err)
 
-        // Une erreur est survenue, on n'affiche plus le bouton de rattachement
-        // On doit recharger la page pour afficher le statut actuel de l'organisation
+        // An error occurred, hide the attach button
+        // The page must be reloaded to display the current status of the organization
         setShowAttachButton(false)
         setAttachLoading(false)
       })
+  }
+
+  const detachProducer = (id) => {
+    axios
+      .post(detachOrganizationUrl(id))
+      .then(() => {
+        setHasPendingTask(true)
+        notifySuccess('Votre demande a bien été soumise à l\'équipe administrative du portail.')
+        refresh()
+      })
+      .catch((err) => {
+        // On error, display a generic error message unless it's a 409 meaning a request is already pending
+        if (err?.response?.status === 409) {
+          notifyWarning('Une demande est déjà en cours pour cette organisation.')
+        } else {
+          defaultErrorHandler(
+        'Une erreur est survenue. Veuillez consulter le rapport au sein de votre espace "Rapport portail" disponible depuis votre onglet "Admin".')
+        }
+      })
+  }
+
+  const checkHasTaskThenDetach = (id) => {
+    axios
+      .post(hasTaskUrl(id))
+      .then((res) => {
+        if (res.data) {
+          notifyWarning('Une demande est déjà en cours pour cette organisation.')
+        } else {
+          toggleDetachModal()
+        }
+      })
+      .catch(() => toggleDetachModal())
   }
 
   /**
@@ -105,7 +146,7 @@ export function ProducerCard({
 
   const displayEditionButton = (hideEdit) =>
     hideEdit ? (
-      <button type={'button'} className={'btn primary-btn'} disabled={hideEdit}>
+      <button type={'button'} className={'btn primary-btn btn-rudi'} disabled={hideEdit}>
         <Pencil />
       </button>
     ) : (
@@ -146,7 +187,9 @@ export function ProducerCard({
       case 'VALIDATED':
         return displaySpan('rudi', 'Rattaché')
       case 'DISENGAGED':
-        return displaySpan('muted', 'Détaché')
+        return displaySpan('rudi', 'Détaché')
+      case 'DETACH_IN_PROGRESS':
+        return displaySpan('rudi', 'Détachement en attente de validation')
       default:
         return ''
     }
@@ -169,27 +212,42 @@ export function ProducerCard({
   return (
     <div className="col-12" key={producerId}>
       <GenericModal visible={visible} toggle={toggle} options={options} animation={false}></GenericModal>
+      <DetachProducerModal
+        visible={isVisibleDetachModal}
+        toggle={toggleDetachModal}
+        onConfirm={() => detachProducer(producerId)}
+      />
       <div className="card card-margin">
         <h5 className="card-header">
           <div className="d-flex justify-content-between align-items-center">
             <a>{producerName}</a>
             <span className={'align-pill-right '}>
-              {producer['organization_status'] && displayValidationStatus(producer['organization_status'])}
+              {producer['organization_status'] && producer['linked_producer_status'] !== 'DISENGAGED' && displayValidationStatus(producer['organization_status'])}
               {producer['linked_producer_status'] && displayAttachmentStatus(producer['linked_producer_status'])}
             </span>
             {isEdit && (
               <div className="btn-group" role="group">
                 <button
                   type={'button'}
-                  className={'btn primary-btn'}
+                  className={'btn primary-btn btn-rudi'}
                   onClick={() => updateOrganizationFromPortal(producerId)}
                 >
                   <ArrowRepeat />
                 </button>
                 {displayEditionButton(hideEdit)}
+                {portalConnected && (
+                  <button
+                    type={'button'}
+                    className={'btn btn-detach'}
+                    onClick={() => checkHasTaskThenDetach(producerId)}
+                    disabled={hasPendingTask || producer['linked_producer_status'] !== 'VALIDATED'}
+                  >
+                    <DashLg />
+                  </button>
+                )}
                 <button
                   type={'button'}
-                  className="btn btn-danger"
+                  className="btn btn-danger btn-rudi"
                   onClick={() => triggerDeleteProducer(producerId)}
                   disabled={hideEdit}
                 >
