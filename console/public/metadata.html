@@ -1,16 +1,17 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="images/logo.png" />
-    <link rel="stylesheet" href="styles/style.css" />
-    <link rel="stylesheet" href="styles/rudi.css" />
-    <link rel="stylesheet" href="styles/form.css" />
-    <link rel="stylesheet" href="styles/material_layout.css" />
-    <link rel="stylesheet" href="styles/material_icons.css" />
-    <link rel="stylesheet" href="dependencies/leaflet/leaflet.css" />
-    <link rel="stylesheet" href="dependencies/leaflet.draw/leaflet.draw.css" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/png" href="images/logo.png"/>
+    <link rel="stylesheet" href="styles/style.css"/>
+    <link rel="stylesheet" href="styles/rudi.css"/>
+    <link rel="stylesheet" href="styles/form.css"/>
+    <link rel="stylesheet" href="styles/material_layout.css"/>
+    <link rel="stylesheet" href="styles/material_icons.css"/>
+    <link rel="stylesheet" href="dependencies/leaflet/leaflet.css"/>
+    <link rel="stylesheet" href="dependencies/leaflet.draw/leaflet.draw.css"/>
+    <link rel="stylesheet" href="dependencies/ckeditor5/ckeditor5.css">
     <title>Rudi Metadata</title>
 
     <script type="module" src="lib/MaterialInputs.js"></script>
@@ -19,24 +20,26 @@
 
     <script type="text/javascript" src="dependencies/leaflet/leaflet.js"></script>
     <script type="text/javascript" src="dependencies/leaflet.draw/leaflet.draw.js"></script>
-  </head>
-  <body>
-    <div class="banner" id="MessageBanner">Loading...</div>
-    <div class="section">
-      <div class="wide-container">
+</head>
+<body>
+<div class="banner" id="MessageBanner">Loading...</div>
+<div class="section">
+    <div class="wide-container">
         <div class="row">
-          <div class="col s2 m2 l2" hidden>
-            <button class="icon-flat" disabled>Go back<i class="material-icons left">navigate_before</i></button>
-          </div>
-          <textarea id="dev_paste" class="col s2 m6 l10"></textarea>
+            <div class="col s2 m2 l2" hidden>
+                <button class="icon-flat" disabled>Go back<i class="material-icons left">navigate_before</i></button>
+            </div>
+            <textarea id="dev_paste" class="col s2 m6 l10"></textarea>
         </div>
-      </div>
-      <div class="container">
+    </div>
+    <div class="container">
         <custom-form id="custom_form"></custom-form>
         <div class="empty_display"></div>
-      </div>
     </div>
+</div>
 
-    <script type="module" src="js/metadata.js"></script>
-  </body>
+<script type="module" src="./js/metadata.js"></script>
+<script type="module" src="./dependencies/dompurify/purify.es.mjs"></script>
+<script type="module" src="dependencies/ckeditor5/ckeditor5.js"></script>
+</body>
 </html>

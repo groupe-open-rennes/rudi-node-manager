@@ -29,10 +29,16 @@ export class MetadataForm extends RudiForm {
   async getTemplate() {
     const here = 'getTemplate'
     try {
-      if (!this.initialized) throw new Error('Init function should be called first')
+      if (!this.initialized) {
+        throw new Error('Init function should be called first')
+      }
       this.template = await this.getLocal('templates/metadata.json')
-      if (!this.template) throw new Error('Could not load template')
-      if (!this.template.fragmentSet) throw new Error('Could not load template.fragmentSet')
+      if (!this.template) {
+        throw new Error('Could not load template')
+      }
+      if (!this.template.fragmentSet) {
+        throw new Error('Could not load template.fragmentSet')
+      }
 
       // this.ok(here, JSON.stringify(this.template))
       // Fetch template and enums to create form
@@ -41,7 +47,7 @@ export class MetadataForm extends RudiForm {
         data = await Promise.all([
           this.getPmJson('catalog/enum?lang=fr'),
           this.getPmJson('catalog/contacts'),
-          this.getPmJson('catalog/organizations'),
+          this.getPmJson('catalog/organizations/metadata'),
           this.getPmJson('catalog/pub_keys?type=rsa'),
         ])
       } catch (err) {
@@ -64,7 +70,9 @@ export class MetadataForm extends RudiForm {
       enums.keywords.sort(new Intl.Collator().compare)
       enums.publickeys.sort(new Intl.Collator().compare)
 
-      if (!this.template?.fragmentSet?.enums) throw new Error('Template was not successfully loaded')
+      if (!this.template?.fragmentSet?.enums) {
+        throw new Error('Template was not successfully loaded')
+      }
       if (!this.template.fragmentSet.enums.$) this.template.fragmentSet.enums.$ = {}
       Object.assign(this.template.fragmentSet.enums.$, enums)
 
@@ -155,7 +163,7 @@ export class MetadataForm extends RudiForm {
       if (originalValue) {
         // Conserve other type of media from original value
         for (const media of originalValue.available_formats) {
-          if (media.media_type != 'FILE' && media.media_type != 'SERVICE') {
+          if (media.media_type !== 'FILE' && media.media_type !== 'SERVICE') {
             outputValue.available_formats.push(media)
           }
         }
@@ -165,10 +173,12 @@ export class MetadataForm extends RudiForm {
     }
 
     // Set restricted_access bool value
-    if (!outputValue.access_condition.confidentiality) outputValue.access_condition.confidentiality = {}
+    if (!outputValue.access_condition.confidentiality) {
+      outputValue.access_condition.confidentiality = {}
+    }
     outputValue.access_condition.confidentiality.restricted_access = Boolean(
       (outputValue.restricted_access && hasLocalFile) ||
-      originalValue?.access_condition?.confidentiality?.restricted_access
+        originalValue?.access_condition?.confidentiality?.restricted_access
     )
 
     // REMOVE OR API FAIL WHEN PUBLISHING NEW RESTRICTED DATA
@@ -203,7 +213,9 @@ export class MetadataForm extends RudiForm {
       if (files.length) formValue.available_formats.files = files
       if (services.length) formValue.available_formats.services = services
     }
-    const pubKeyName = files[0]?.connector?.connector_parameters?.filter((p) => p.key == PROP_PUB_KEY_NAME)[0]?.value
+    const pubKeyName = files[0]?.connector?.connector_parameters?.filter(
+      (p) => p.key == PROP_PUB_KEY_NAME
+    )[0]?.value
     formValue.restricted_access = pubKeyName
     formValue.keywords = `${formValue.keywords}`
     return formValue
@@ -213,7 +225,10 @@ export class MetadataForm extends RudiForm {
   async getStorageHeaders(initialHeaders = {}) {
     try {
       if (!this.mediaHeaders) {
-        const pmStorageJwtRes = await JsonHttpRequest.get(this.getUrlBackStorage('jwt'), this.pmHeaders).send()
+        const pmStorageJwtRes = await JsonHttpRequest.get(
+          this.getUrlBackStorage('jwt'),
+          this.pmHeaders
+        ).send()
         const mediaToken = pmStorageJwtRes.token
         this.mediaHeaders = Object.assign(initialHeaders, { Authorization: `Bearer ${mediaToken}` })
       }
@@ -241,7 +256,9 @@ export class MetadataForm extends RudiForm {
     try {
       const mediaInfo = JSON.parse(JSON.stringify(mediaFile))
       mediaInfo.media_name = encodeURI(mediaFile.media_name)
-      const postMediaOpts = await this.getStorageHeaders({ 'File-Metadata': JSON.stringify(mediaInfo) })
+      const postMediaOpts = await this.getStorageHeaders({
+        'File-Metadata': JSON.stringify(mediaInfo),
+      })
       if (!postMediaOpts) return
 
       const mediaId = mediaFile.media_id
@@ -281,7 +298,9 @@ export class MetadataForm extends RudiForm {
       const mediaFilesPromises = []
       for (const media of data.available_formats) {
         if (media instanceof MediaFile && media.hasFileAttached()) {
-          mediaFilesPromises.push(openEncryptAndChecksum(media, publicKey, publicPEM, keyName, 'SHA-256'))
+          mediaFilesPromises.push(
+            openEncryptAndChecksum(media, publicKey, publicPEM, keyName, 'SHA-256')
+          )
           const now = new Date()
           data.dataset_dates.updated = now
           this.customForm.htmlController.updated.value = now
@@ -295,7 +314,10 @@ export class MetadataForm extends RudiForm {
     // TODO: check si tous les fichiers sont bien uploadés, sinon supprimer la métadonnée ou mettre son état à WIP
     try {
       // Sending the metadata to PM => API
-      const res = await submitFunction(this.getUrlBackCatalog('resources'), this.pmHeaders).sendJson(data)
+      const res = await submitFunction(
+        this.getUrlBackCatalog('resources'),
+        this.pmHeaders
+      ).sendJson(data)
       this.ok(here, 'metadata sent', res)
     } catch (e) {
       console.error(`ERR01 Couldn't send the metadata to the API, aborting. Cause:`, e)
@@ -320,12 +342,15 @@ export class MetadataForm extends RudiForm {
       let errMsgDetected = []
       for (const fileRes of storageResponse) {
         const fileResParsed = safeJsonParse(fileRes)
-        if (fileResParsed?.length > 0 && fileResParsed[fileResParsed.length - 1]?.status == 'error') {
+        if (
+          fileResParsed?.length > 0 &&
+          fileResParsed[fileResParsed.length - 1]?.status === 'error'
+        ) {
           const errMsg = `File not sent: ${fileResParsed[fileResParsed.length - 1]?.msg}`
           errMsgDetected.push(errMsg)
         }
       }
-      if (errMsgDetected.length == 0) {
+      if (errMsgDetected.length === 0) {
         if (this.isDev) this.ok(here, 'every media was sent', storageResponse)
         return this.end(this.isUpdate ? 'edit' : 'create')
       } else {
@@ -357,7 +382,9 @@ export class MetadataForm extends RudiForm {
         return this.fail('No output gathered')
       }
 
-      this.customForm.htmlController.submit_btn.removeEventListener('click', () => this.submitListener())
+      this.customForm.htmlController.submit_btn.removeEventListener('click', () =>
+        this.submitListener()
+      )
       await this.publish(outputValue)
     } catch (e) {
       this.ko(here, e)
@@ -374,8 +401,13 @@ export class MetadataForm extends RudiForm {
       const resultArray = safeJsonParse(data)
       this.ok(here, 'resultArray:', resultArray)
       if (!Array.isArray(resultArray)) {
-        console.error(`Invalid response from media server for media ${mediaId}: status=`, resultArray)
-        throw new Error(`Invalid response from media server for media ${mediaId}: status=${resultArray}`)
+        console.error(
+          `Invalid response from media server for media ${mediaId}: status=`,
+          resultArray
+        )
+        throw new Error(
+          `Invalid response from media server for media ${mediaId}: status=${resultArray}`
+        )
       }
       if (resultArray.length < 3) {
         const storageMessage = resultArray[resultArray.length - 1]?.msg
@@ -385,7 +417,7 @@ export class MetadataForm extends RudiForm {
         )
       }
       for (const statusInfo of resultArray) {
-        if (statusInfo.status == MEDIA_COMMIT_OK) {
+        if (statusInfo.status === MEDIA_COMMIT_OK) {
           Object.assign(commitInfo, statusInfo)
           break
         }
@@ -397,7 +429,9 @@ export class MetadataForm extends RudiForm {
       }
       if (metadataId) commitInfo.global_id = metadataId
       try {
-        await JsonHttpRequest.post(this.getUrlBackStorage('commit'), this.pmHeaders).sendJson(commitInfo)
+        await JsonHttpRequest.post(this.getUrlBackStorage('commit'), this.pmHeaders).sendJson(
+          commitInfo
+        )
         this.ok(here, 'Commit succeeded for media', mediaId)
       } catch (error) {
         console.error(`E [${here}.post] Committing failed for media ${mediaId}`, error)
@@ -433,7 +467,7 @@ export class MetadataForm extends RudiForm {
     const here = 'loadForm'
     const metadataForm = new MetadataForm('fr')
     await metadataForm.init()
-    if (metadataForm.state == 'fail' || metadataForm.state == 'critic') return
+    if (metadataForm.state === 'fail' || metadataForm.state === 'critic') return
     try {
       await metadataForm.getTemplate()
       metadataForm.ok(here, 'getTemplate')
@@ -748,6 +782,7 @@ class MediaService {
 //     {
 //       lang: 'fr',
 //       text: 'Test de donnée description',
+//       html: '<strong>Test de donnée description html</strong>'
 //       autre: 'test'
 //     }
 //   ],

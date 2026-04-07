@@ -1,0 +1,32 @@
+@import '../../../styles/App.scss';
+
+.outer-loader-container {
+  height: 2em;
+  //overflow: hidden;
+}
+
+.btn.btn-rudi {
+  &:disabled,
+  &.disabled {
+    background-color: $disabled;
+    border: none;
+    color: white;
+  }
+}
+
+.btn.btn-detach {
+  background-color: #D04838;
+  color: white;
+
+  &:disabled,
+  &.disabled {
+    background-color: $disabled;
+    border: none;
+    color: white;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: darken(#D04838, 10%);
+    color: white;
+  }
+}

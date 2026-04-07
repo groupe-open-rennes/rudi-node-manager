@@ -12,9 +12,14 @@ import {
   getCatalogVersion,
   getEnum,
   getLicences,
-  getPortalOrganizationCatalog,
+  getPortalOrganizationCatalogFromId,
+  searchPortalOrganizationsCatalog,
+  getOrganizationsForMetadata,
   getThemeByLang,
   testPortalConnection,
+  attachCatalogOrganization,
+  detachCatalogOrganization,
+  linkedProducerHasTask,
 } from '../controllers/dataController.js'
 import { expressErrorHandler } from '../controllers/errorHandler.js'
 import {
@@ -46,6 +51,12 @@ catalogApi.get('/licences', getLicences)
 catalogApi.get('/portal/test', testPortalConnection)
 
 // TODO : propagate res.status
+catalogApi.get(`/portal/organizations/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), getPortalOrganizationCatalogFromId)
+catalogApi.get(`/portal/organizations`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), searchPortalOrganizationsCatalog)
+catalogApi.post('/portal/attach/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), attachCatalogOrganization)
+catalogApi.post('/portal/detach/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), detachCatalogOrganization)
+catalogApi.post('/portal/has_task/organizations/:id', checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), linkedProducerHasTask)
+catalogApi.get('/organizations/metadata', getOrganizationsForMetadata)
 catalogApi.get(`/counts`, getCounts)
 catalogApi.get(`/:objectType`, getObjectList)
 catalogApi.get(`/:objectType/search`, searchObjects)
@@ -54,5 +65,4 @@ catalogApi.put(`/:objectType`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), putObject
 catalogApi.get(`/:objectType/:id`, getObjectById)
 catalogApi.delete(`/:objectType/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), deleteObject)
 catalogApi.delete(`/:objectType`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), deleteObjects)
-catalogApi.get(`/portal/organizations/:id`, checkRolePerm([ROLE_EDIT, ROLE_ADMIN]), getPortalOrganizationCatalog)
 catalogApi.use((err, req, reply, next) => expressErrorHandler(err, req, reply, next))

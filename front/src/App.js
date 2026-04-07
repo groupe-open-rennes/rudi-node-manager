@@ -18,10 +18,12 @@ import CatalogueMetadata from './components/catalogue/catalogueMetadata'
 import CatalogueContact from './components/generic/catalogueContact'
 import CatalogueProducer from './components/producers/catalogueProducer'
 import CataloguePubKeys from './components/generic/cataloguePubKeys'
-import CatalogueReports from './components/generic/catalogueReports'
+import ReportsPage from './components/reports/reportsPage'
 import ModalProvider from './components/modals/genericModalContext'
+import { ToastProvider } from './components/toasts/toastContext'
 import CatalogueUser from './components/users/catalogueUser'
 import Visualisation from './components/visualisation/visualisation'
+import AttachProducers from './components/producers/attach/attachProducers'
 import { BackConfContext } from './context/backConfContext.js'
 import { JwtContext } from './context/jwtContext'
 
@@ -135,6 +137,7 @@ export default function App() {
     </div>
   ) : (
     <Router basename={rootUrl}>
+      <ToastProvider>
       <ModalProvider>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="modal-test"></div>
@@ -206,9 +209,10 @@ export default function App() {
           <Route path="/" element={<CatalogueMetadata editMode={isEditor} logout={logout} />} />
           <Route path="metadata" element={<CatalogueMetadata editMode={isEditor} logout={logout} />} />
           <Route path="producer" element={<CatalogueProducer editMode={isEditor} logout={logout} />} />
+          <Route path="producer-attach" element={<AttachProducers logout={logout} />} />
           <Route path="contact" element={<CatalogueContact editMode={isEditor} logout={logout} />} />
           <Route path="pub_key" element={<CataloguePubKeys editMode={isAdmin} logout={logout} />} />
-          <Route path="report" element={<CatalogueReports editMode={isAdmin} logout={logout} />} />
+          <Route path="report" element={<ReportsPage editMode={isAdmin} logout={logout} />} />
           <Route path="licence" element={<CatalogueLicence logout={logout} />} />
           <Route path="show/:id" element={<Visualisation logout={logout} />} />
           <Route path="show" element={<Visualisation logout={logout} />} />
@@ -216,6 +220,7 @@ export default function App() {
           <Route path="*" element={<Navigate replace to="/" relative="path" />} />
         </Routes>
       </ModalProvider>
+      </ToastProvider>
     </Router>
   )
 }

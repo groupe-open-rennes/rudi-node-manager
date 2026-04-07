@@ -3,8 +3,8 @@ import InfiniteScroll from 'react-infinite-scroll-component'
 import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
 import { BackConfContext } from '../../context/backConfContext'
 import axios from 'axios'
-import {EditObjCard} from "../generic/objCard";
-import {ProducerCard} from "./producerCard";
+import {ProducerCard} from "./producer-card/producerCard";
+import {ProducerManagmentCard} from "./producerManagmentCard";
 
 const PAGE_SIZE = 20
 
@@ -95,20 +95,10 @@ export default function CatalogueProducer({ editMode, logout }) {
       <div className="row catalogue">
         <div className="col-9">
           <div className="row">
-            {isEdit && (
-              <EditObjCard
-                objType="organizations"
-                idField="organization_id"
-                deleteUrl={deleteUrl}
-                deleteConfirmMsg={(id) => `Confirmez vous la suppression du producteur ${id}?`}
-                deleteMsg={(id) => `Le producteur ${id} a été supprimé`}
-                btnTextAdd="Ajouter un producteur"
-                btnTextChg="Modifier un producteur :"
-                refresh={refresh}
-                canAdd={false}
-                canDelete={false}
-              ></EditObjCard>
-            )}
+
+          </div>
+          <div className="row">
+            <ProducerManagmentCard></ProducerManagmentCard>
             <InfiniteScroll
               dataLength={producerList.length}
               next={() => setCurrentOffset(currentOffset + PAGE_SIZE)}

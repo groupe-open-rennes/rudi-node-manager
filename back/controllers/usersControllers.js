@@ -24,7 +24,7 @@ import {
 } from '../database/database.js'
 import { BadRequestError, ForbiddenError, NotFoundError, RudiError } from '../utils/errors.js'
 import { logW } from '../utils/logger.js'
-import { initPwdSecret } from '../utils/secu.js'
+import { initPwdSecret, isInvalidUsername } from '../utils/secu.js'
 import { formatError } from './errorHandler.js'
 
 const INIT_PWD = initPwdSecret()
