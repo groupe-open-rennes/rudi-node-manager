@@ -107,14 +107,6 @@
             { "id": "@summary", "tag": "multi-rich-textarea", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@theme", "tag": "select-input", "class": ["col", "s4", "m4"], "attr": { "required": true } },
             { "id": "@keywords", "tag": "datalist-input", "class": ["col", "s4", "m4"], "attr": { "required": true } },
-            {
-              "tag": "div",
-              "attr": { "required": true },
-              "class": ["row", "flex"],
-              "children": [
-                { "id": "@dataset_update_frequency", "tag": "select-input", "class": ["col", "s4"]}
-              ]
-            },
             { "id": "@producer", "tag": "select-input", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@contacts", "tag": "selectm-input", "class": ["col", "s4"], "attr": { "required": true } },
             { "id": "@resource_languages", "tag": "selectm-input", "class": ["col", "s4", "m4"] },
@@ -147,6 +139,11 @@
                 { "id": "@updated", "tag": "date-input", "class": ["col", "s4", "m4"], "attr": { "required": true } },
                 { "id": "@deleted", "tag": "date-input", "class": ["col", "s4", "m4"] }
               ]
+            },
+            {
+              "id": "@dataset_update_frequency",
+              "tag": "select-input",
+              "class": ["col", "s4"]
             },
             {
               "id": "@storage_status",
@@ -309,6 +306,12 @@
       "temporal_spread": { "textContent": "Étendue temporelle" },
       "dataset_size": { "textContent": "Taille de la donnée" },
       "dataset_dates": { "textContent": "Dates de référence" },
+      "dataset_update_frequency": {
+        "attr": {
+          "label": "Fréquence de mise à jour du jeu de données",
+          "helper": "Fréquence de mise à jour du jeu de données"
+        }
+      },
       "access_condition": { "textContent": "Contraintes d'accès" },
       "confidentiality": { "textContent": "Confidentialité" },
       "licence": { "textContent": "Licence" },
@@ -334,7 +337,6 @@
           "helper": "Liste de mots-clés qui caractérisent la ressource (séparés par des virgules)"
         }
       },
-      "dataset_update_frequency": { "attr": { "label": "Fréquence de mise à jour", "helper": "Fréquence de mise à jour des médias"} },
       "producer": { "attr": { "label": "Producteur de la donnée", "helper": "Organisation qui a produit la donnée" } },
       "contacts": { "attr": { "label": "Contact", "helper": "Liste de personnes référentes pour la donnée" } },
       "files": { "attr": { "label": "Fichiers", "helper": "Liste des formats disponibles pour la donnée" } },
@@ -458,11 +460,11 @@
       "summary": "opt_language",
       "theme": { "init": { "setOptions": ["$themes"] } },
       "keywords": { "init": { "setDataList": ["$keywords"] } },
-      "dataset_update_frequency": { "init": { "setOptions": ["$updatefrequency"] } },
       "producer": "opt_organizations",
       "contacts": "opt_contacts",
       "resource_languages": "opt_language",
-      "storage_status": { "init": { "setOptions": ["$storagestatus"] } }, 
+      "storage_status": { "init": { "setOptions": ["$storagestatus"] } },
+      "dataset_update_frequency": { "init": { "setOptions": ["$updatefrequencies"] } },
       "restricted_access": { "init": { "setOptions": ["$publickeys"] } },
       "licence_type": { "init": { "setOptions": ["$licencetypes", true] } },
       "licence_label": { "init": { "setOptions": ["$licences", true] } },
