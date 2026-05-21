@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import PropTypes from 'prop-types'
-import React, { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { Pencil, Plus, Trash } from 'react-bootstrap-icons'
 
 import { BackConfContext } from '../../context/backConfContext.js'
@@ -193,12 +193,12 @@ export function EditObjCard({
         href={getFormObj(objType, `update=${editID}`)}
         target="_blank"
         rel="noopener noreferrer"
-        className="btn primary-btn"
+        className="btn btn-warning"
       >
         <Pencil />
       </a>
     ) : (
-      <button type="button" className="btn primary-btn" disabled>
+      <button type="button" className="btn btn-warning" disabled>
         <Pencil />
       </button>
     ),

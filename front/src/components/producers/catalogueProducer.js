@@ -1,10 +1,10 @@
-import React, { useContext, useEffect, useRef, useState } from 'react'
-import InfiniteScroll from 'react-infinite-scroll-component'
-import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
-import { BackConfContext } from '../../context/backConfContext'
 import axios from 'axios'
-import {ProducerCard} from "./producer-card/producerCard";
-import {ProducerManagmentCard} from "./producerManagmentCard";
+import { useContext, useEffect, useRef, useState } from 'react'
+import InfiniteScroll from 'react-infinite-scroll-component'
+import { BackConfContext } from '../../context/backConfContext'
+import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
+import { ProducerCard } from './producer-card/producerCard'
+import { ProducerManagmentCard } from './producerManagmentCard'
 
 const PAGE_SIZE = 20
 
@@ -14,12 +14,16 @@ const PAGE_SIZE = 20
  */
 export default function CatalogueProducer({ editMode, logout }) {
   const { defaultErrorHandler } = useDefaultErrorHandler()
+
   const { backConf } = useContext(BackConfContext)
   const [back, setBack] = useState(backConf)
   useEffect(() => setBack(backConf), [backConf])
 
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(editMode), [editMode])
+
+  const [portalConnected, setPortalConnected] = useState(true)
+  useEffect(() => setPortalConnected(back?.isLoaded && back.portalConnected), [backConf])
 
   const [producerList, setProducerList] = useState([])
   const [hasMore, setHasMore] = useState(true)
@@ -28,9 +32,9 @@ export default function CatalogueProducer({ editMode, logout }) {
 
   const getCatalogUrlObj = (suffix) => back?.isLoaded && back.getBackCatalog('organizations', suffix)
   const deleteUrl = (id) => getCatalogUrlObj(id)
-
-  const [sortBy, setSortBy] = useState('-updatedAt')
-  useEffect(() => setSortBy('-updatedAt'), ['-updatedAt'])
+  const sortBy = '-organization_status,-updatedAt'
+  // const [sortBy, setSortBy] = useState('organization_status,-updatedAt')
+  // useEffect(() => setSortBy('-updatedAt'), ['-updatedAt'])
 
   const refresh = () => {
     setHasMore(true)
@@ -89,14 +93,10 @@ export default function CatalogueProducer({ editMode, logout }) {
       })
       .catch((err) => (err.response?.status == 401 ? logout() : defaultErrorHandler(err)))
   }
-  //hideEdit: producer['organization_status'] !== "VALIDATED"
   return (
     <div className={'tempPaddingTop'}>
       <div className="row catalogue">
         <div className="col-9">
-          <div className="row">
-
-          </div>
           <div className="row">
             <ProducerManagmentCard></ProducerManagmentCard>
             <InfiniteScroll
@@ -109,21 +109,10 @@ export default function CatalogueProducer({ editMode, logout }) {
               {producerList.map((producer) => (
                 <ProducerCard
                   editMode={isEdit}
-                  hideEdit={true}
                   producer={producer}
-                  propId="organization_id"
-                  propName="organization_name"
-                  displayFields={{
-                    organization_id: "Identifiant de l'organisation",
-                    organization_caption: 'Nom complet',
-                    organization_summary: 'Description',
-                    organization_address: 'Adresse',
-                  }}
-                  deleteUrl={deleteUrl}
-                  deleteConfirmMsg={(id) => `Confirmez vous la suppression du producteur ${id}?`}
-                  deleteMsg={(id) => `Le producteur ${id} a été supprimé`}
+                  key={`${producer.organization_id}`}
                   refresh={refresh}
-                  key={`${producer['organization_id']}`}
+                  deleteUrl={deleteUrl}
                 ></ProducerCard>
               ))}
             </InfiniteScroll>

@@ -9,24 +9,23 @@
   &:disabled,
   &.disabled {
     background-color: $disabled;
-    border: none;
-    color: white;
+    color: grey;
   }
 }
 
 .btn.btn-detach {
-  background-color: #D04838;
+  background-color: #d04838;
   color: white;
 
   &:disabled,
   &.disabled {
     background-color: $disabled;
-    border: none;
     color: white;
   }
 
   &:hover:not(:disabled) {
-    background-color: darken(#D04838, 10%);
+    background-color: darken(#d04838, 10%);
+    border-color: white;
     color: white;
   }
 }

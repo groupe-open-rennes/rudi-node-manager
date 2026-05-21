@@ -1,11 +1,11 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { SearchProducers } from '../search-producer/searchProducers'
-import InfiniteScroll from 'react-infinite-scroll-component'
-import { ProducerCard } from '../producer-card/producerCard'
-import useDefaultErrorHandler from '../../../utils/useDefaultErrorHandler'
-import { BackConfContext } from '../../../context/backConfContext'
 import axios from 'axios'
+import { useContext, useEffect, useState } from 'react'
+import InfiniteScroll from 'react-infinite-scroll-component'
+import { BackConfContext } from '../../../context/backConfContext'
+import useDefaultErrorHandler from '../../../utils/useDefaultErrorHandler'
 import { Loader } from '../../other/loader/loader'
+import { ProducerCard } from '../producer-card/producerCard'
+import { SearchProducers } from '../search-producer/searchProducers'
 
 const PAGE_SIZE = 20
 
@@ -35,9 +35,8 @@ export default function AttachProducers({ logout }) {
     }
   }, [currentOffset])
 
-  const searchCatalogOrganisationUrl = (suffix) =>
-    back?.isLoaded && back.getBackCatalog('/portal/organizations', suffix)
-  const attachOrganizationUrl = (id) => back?.isLoaded && back.getBackCatalog('/portal/attach/organizations', id)
+  const getPortalOrgsUrl = (...args) => back?.isLoaded && back.getBackCatalog('/portal/organizations', ...args)
+  const attachOrgUrl = (id) => getPortalOrgsUrl(id, 'attach')
 
   const handleCriteria = async ({ searchUuid, searchName }) => {
     console.groupCollapsed('handleCriteria')
@@ -53,7 +52,7 @@ export default function AttachProducers({ logout }) {
   }
 
   const search = async (cardUuid = uuid, cardName = name) => {
-    if(displayLoader){
+    if (displayLoader) {
       setIsLoading(true)
     }
     try {
@@ -62,20 +61,15 @@ export default function AttachProducers({ logout }) {
         limit: PAGE_SIZE,
         offset: currentOffset,
       }
-      if(cardUuid){
+      if (cardUuid) {
         params['uuid'] = cardUuid
       }
-      if(cardName){
+      if (cardName) {
         params['name'] = cardName
       }
-      console.log(
-        'params', params
-      )
+      console.log('params', params)
       await axios
-
-        .get(searchCatalogOrganisationUrl(), {
-          params: params,
-        })
+        .get(getPortalOrgsUrl(), { params })
         .then((res) => {
           if (res.data?.total < PAGE_SIZE || res.data?.elements.length < PAGE_SIZE) {
             setHasMore(false)
@@ -97,7 +91,11 @@ export default function AttachProducers({ logout }) {
   }
 
   const endListMessage = () => {
-    return searchResults && searchResults.length ===0 ?<i>Aucune organisation trouvée pour cette recherche.</i> : <i>Aucune donnée supplémentaire</i>
+    return searchResults && searchResults.length === 0 ? (
+      <i>Aucune organisation trouvée pour cette recherche.</i>
+    ) : (
+      <i>Aucune donnée supplémentaire</i>
+    )
   }
 
   return (
@@ -111,40 +109,40 @@ export default function AttachProducers({ logout }) {
           {!isLoading && searchResults && (
             <div className="row my-5">
               <h1>Résultats</h1>
-                <InfiniteScroll
-                  dataLength={searchResults.length}
-                  hasMore={hasMore}
-                  next={() => {
-                    setCurrentOffset(currentOffset + PAGE_SIZE)
-                    setDisplayLoader(false)
-                  }}
-                  loader={<Loader fullScreen={false} size={'sm'}></Loader>}
-                  endMessage={endListMessage()}
-                >
-                  {searchResults.map((producer) => (
-                    <ProducerCard
-                      editMode={false}
-                      hideEdit={true}
-                      producer={producer}
-                      key={`${producer['organization_id']}`}
-                      propId="organization_id"
-                      propName="organization_name"
-                      displayFields={{
-                        organization_id: "Identifiant de l'organisation",
-                        organization_caption: 'Nom complet',
-                        organization_summary: 'Description',
-                        organization_address: 'Adresse',
-                      }}
-                      attachUrl={attachOrganizationUrl}
-                    ></ProducerCard>
-                  ))}
-                </InfiniteScroll>
+              <InfiniteScroll
+                dataLength={searchResults.length}
+                hasMore={hasMore}
+                next={() => {
+                  setCurrentOffset(currentOffset + PAGE_SIZE)
+                  setDisplayLoader(false)
+                }}
+                loader={<Loader fullScreen={false} size={'sm'}></Loader>}
+                endMessage={endListMessage()}
+              >
+                {searchResults.map((producer) => (
+                  <ProducerCard
+                    editMode={false}
+                    hideEdit={true}
+                    producer={producer}
+                    key={`${producer.organization_id}`}
+                    propId="organization_id"
+                    propName="organization_name"
+                    displayFields={{
+                      organization_id: "Identifiant de l'organisation",
+                      organization_caption: 'Nom complet',
+                      organization_summary: 'Description',
+                      organization_address: 'Adresse',
+                    }}
+                    attachUrl={attachOrgUrl}
+                  ></ProducerCard>
+                ))}
+              </InfiniteScroll>
             </div>
           )}
           {isLoading && displayLoader && (
-              <div className="row my-5">
+            <div className="row my-5">
               <Loader fullScreen={false} size={'md'}></Loader>
-              </div>
+            </div>
           )}
         </div>
       </div>

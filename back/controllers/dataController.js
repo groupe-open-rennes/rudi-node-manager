@@ -12,8 +12,8 @@ import axios from 'axios'
 // -------------------------------------------------------------------------------------------------
 import {
   CATALOG,
-  getCatalogAdminPath,
   getCatalogAdminUrl as getCatalogAdminApiUrl,
+  getCatalogAdminPath,
   getCatalogUrlAndParams,
   getHostDomain,
   getPublicBack,
@@ -25,9 +25,9 @@ import {
 import { getTags } from '../config/backOptions.js'
 
 import { getCatalogHeaders, sendJsonAndTokens } from '../utils/secu.js'
+import { cleanErrMsg } from '../utils/utils.js'
 import { handleError, treatAxiosError } from './errorHandler.js'
 import { getStoragePublicUrl } from './mediaController.js'
-import { cleanErrMsg } from '../utils/utils.js'
 
 let cache = {}
 // Helper functions
@@ -154,22 +154,28 @@ export const linkedProducerHasTask = (req, reply) => {
 
 export async function getInitData(req, reply) {
   try {
-    const data = await Promise.all([getThemes(req), getCatalogPublicUrl(), getStoragePublicUrl(), getPortalUrl()])
-    // console.log(data)
+    const [themeLabels, catalogPubUrl, storagePubUrl, portalUrl] = await Promise.all([
+      getThemes(req),
+      getCatalogPublicUrl(),
+      getStoragePublicUrl(),
+      getPortalUrl(),
+    ])
 
+    const portalConnected = portalUrl && `${portalUrl}`.startsWith('http')
     const tags = getTags()
     const initData = {
       appTag: tags?.tag,
       gitHash: tags?.hash,
-      catalogPubUrl: data[1],
-      storagePubUrl: data[2],
+      catalogPubUrl,
+      storagePubUrl,
       consolePath: getPublicConsole(),
       frontPath: getPublicFront(),
       backPath: getPublicBack(),
       managerPath: getPublicManager(),
       hostUrl: getHostDomain(),
-      portalConnected: !!data[3],
-      themeLabels: data[0],
+      portalUrl,
+      portalConnected,
+      themeLabels,
     }
     return reply ? reply.status(200).json(initData) : initData
   } catch (e) {
@@ -179,8 +185,8 @@ export async function getInitData(req, reply) {
   }
 }
 
-export async function getOrganizationsForMetadata(req, reply) {
-  const opType = 'get_org_for_metadata'
+export async function getValidatedOrganizations(req, reply) {
+  const opType = 'get_valid_orgs'
   try {
     const opts = {
       params: {

@@ -380,25 +380,64 @@ a {
   border-color: white;
 }
 
-.primary-btn:hover{
+.primary-btn:hover {
   border-color: $primary;
   background-color: $primary;
   color: white;
 }
 
-.primary-btn:disabled{
-  border-color: white;
+.primary-btn:disabled {
+  border-color: #f8f8f8;
   background-color: silver;
-
   color: black;
 }
 
 .btn-danger,
 .btn-danger:disabled {
-  border-color: white;
+  border-color: #f8f8f8;
+}
+
+.btn-warning,
+.btn-warning:disabled {
+  border-color: #f8f8f8;
+}
+
+.btn-green,
+.btn-green:disabled {
+  border-color: #f8f8f8;
+}
+
+.btn-success,
+.btn-success:disabled {
+  border-color: #f8f8f8;
 }
 
 .text-bg-rudi {
   background-color: #e6f1fd;
   color: $primary;
+}
+
+.margin-left {
+  margin-left: $marginSides;
+}
+
+.navbarRow {
+  display: flex;
+  width: 100%;
+}
+
+.rightGroup {
+  margin-left: auto; /* pushes whole block to the right */
+  display: flex;
+  align-items: right;
+}
+
+#displayTags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* right-align tag text */
+}
+
+.icon-portal {
+  height: 20px;
 }
