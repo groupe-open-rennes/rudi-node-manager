@@ -1,5 +1,3 @@
-import { logW } from '../utils/logger.js'
-
 const mod = 'callApiSimple'
 
 // -------------------------------------------------------------------------------------------------
@@ -12,7 +10,6 @@ import axios from 'axios'
 // -------------------------------------------------------------------------------------------------
 import {
   CATALOG,
-  getCatalogAdminUrl as getCatalogAdminApiUrl,
   getCatalogAdminPath,
   getCatalogUrlAndParams,
   getHostDomain,
@@ -24,8 +21,9 @@ import {
 
 import { getTags } from '../config/backOptions.js'
 
-import { getCatalogHeaders, sendJsonAndTokens } from '../utils/secu.js'
-import { cleanErrMsg } from '../utils/utils.js'
+import { BadRequestError, NotFoundError } from '../utils/errors.js'
+import { getCatalogHeaders } from '../utils/secu.js'
+import { isUUID } from '../utils/utils.js'
 import { handleError, treatAxiosError } from './errorHandler.js'
 import { getStoragePublicUrl } from './mediaController.js'
 
@@ -85,12 +83,10 @@ export const testPortalConnection = async (req, reply) => {
 
 // Controllers
 export const getCatalogVersion = (req, reply) => callCatalog(getCatalogAdminPath('version'), req, reply)
-
 export function getEnum(req, reply) {
   const lang = req.params?.lang ?? req.query?.lang ?? 'fr'
   return callCatalog(getCatalogAdminPath(`enum?lang=${lang}`), req, reply)
 }
-
 export const getLicences = (req, reply) => callCatalog(getCatalogAdminPath('licences'), req, reply)
 
 const getThemes = (req, reply) => {
@@ -101,56 +97,6 @@ const getThemes = (req, reply) => {
 export const getThemeByLang = (req, reply) => getThemes(req, reply)
 export const getCatalogPublicUrl = () => callCatalog(getCatalogAdminPath('check/node/url'))
 export const getPortalUrl = () => callCatalog(getCatalogAdminPath('check/portal/url'))
-export const getPortalOrganizationCatalogFromId = (req, reply) => {
-  const id = req?.params?.id
-  if (!!id) {
-    try {
-      return callCatalog(getCatalogAdminPath('/portal/organizations', id), req, reply)
-    } catch (err) {
-      return treatAxiosError(err, CATALOG, req, reply)
-    }
-  }
-}
-export const searchPortalOrganizationsCatalog = (req, reply) => {
-  try {
-    return callCatalog(getCatalogAdminPath('/portal/organizations'), req, reply)
-  } catch (err) {
-    return treatAxiosError(err, CATALOG, req, reply)
-  }
-}
-
-export const attachCatalogOrganization = (req, reply) => {
-  const id = req?.params?.id
-  if (!!id) {
-    try {
-      callCatalog(getCatalogAdminPath('/portal/attach/organizations', id), req, reply)
-    } catch (err) {
-      return treatAxiosError(err, CATALOG, req, reply)
-    }
-  }
-}
-
-export const detachCatalogOrganization = (req, reply) => {
-  const id = req?.params?.id
-  if (!!id) {
-    try {
-      callCatalog(getCatalogAdminPath('/portal/detach/organizations', id), req, reply)
-    } catch (err) {
-      return treatAxiosError(err, CATALOG, req, reply)
-    }
-  }
-}
-
-export const linkedProducerHasTask = (req, reply) => {
-  const id = req?.params?.id
-  if (!!id) {
-    try {
-      callCatalog(getCatalogAdminPath('/portal/has_task/organizations', id), req, reply)
-    } catch (err) {
-      return treatAxiosError(err, CATALOG, req, reply)
-    }
-  }
-}
 
 export async function getInitData(req, reply) {
   try {
@@ -160,8 +106,8 @@ export async function getInitData(req, reply) {
       getStoragePublicUrl(),
       getPortalUrl(),
     ])
-
-    const portalConnected = portalUrl && `${portalUrl}`.startsWith('http')
+    // console.log(data)
+    const portalConnected = `${portalUrl}`.startsWith('http')
     const tags = getTags()
     const initData = {
       appTag: tags?.tag,
@@ -185,21 +131,16 @@ export async function getInitData(req, reply) {
   }
 }
 
-export async function getValidatedOrganizations(req, reply) {
-  const opType = 'get_valid_orgs'
+export const getPortalOrg = (req, reply) => {
+  const id = req?.params?.id
+  if (id && !isUUID(id)) throw BadRequestError(`Not a valid UUID: '${id}'`)
+
+  const act = req?.params?.act
+  if (act && !id) throw NotFoundError(`Incorrect route: ${req.url}`)
+
   try {
-    const opts = {
-      params: {
-        organization_status: 'VALIDATED',
-        linked_producer_status: 'VALIDATED',
-      },
-      ...getCatalogHeaders(),
-    }
-    const res = await axios.get(getCatalogAdminApiUrl('organizations', 'metadata'), opts)
-    return sendJsonAndTokens(req, reply, res.data)
+    return callCatalog(getCatalogAdminPath('/portal/organizations', id, act), req, reply)
   } catch (err) {
-    logW(mod, opType, cleanErrMsg(err))
-    logW(mod, opType, err)
     return treatAxiosError(err, CATALOG, req, reply)
   }
 }

@@ -1,19 +1,20 @@
+import { useState } from 'react'
 import { FormHeader } from '../../forms/form-header/form-header'
 import { FormInputText } from '../../forms/form-input-text/form-input-text'
-import React, { useState } from 'react'
+
+export const REGEX_UUID = /^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i
 
 const uuidValidator = (value) => {
   if (!value) {
     return null
   }
-  const uuidRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/
-  return uuidRegex.test(value) ? null : "L'identifiant est invalide ou incomplet"
+
+  return REGEX_UUID.test(value) ? null : "L'identifiant est invalide ou incomplet"
 }
 
 export function SearchProducers({ handleCriteria }) {
   const [orgId, setOrgId] = useState('')
   const [orgName, setOrgName] = useState('')
-
 
   const updateSearchCriteria = async (value, type) => {
     if (!value) {

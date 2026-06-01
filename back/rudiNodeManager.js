@@ -108,7 +108,7 @@ async function connectToRudiModules(maxAttempts = 20) {
         )
       await Promise.all(promises)
       return [moduleUrls.catalog, moduleUrls.storage]
-    } catch (err) {
+    } catch {
       attempt++
       if (attempt >= maxAttempts) break
       const delay = backoffDelay(attempt)

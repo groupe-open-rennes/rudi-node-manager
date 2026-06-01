@@ -2,7 +2,7 @@
 
 import { sanitizeBoth } from '../js/sanitizer.js'
 
-import { buildCKEditor, buildDecoupledEditor } from '../js/ckeditor.js'
+import { buildDecoupledEditor } from '../js/ckeditor.js'
 
 /**
  * @author Florian Desmortreux
@@ -1348,8 +1348,7 @@ export const SelectListMixin = (superclass) =>
     hide(value) {
       let option = this.getOption(value)
       option.toggleAttribute('hidden', true)
-      if (option === this.focusedElement)
-        this.focusedElement = this.focusNext() ?? this.focusPrevious()
+      if (option === this.focusedElement) this.focusedElement = this.focusNext() ?? this.focusPrevious()
     }
 
     show(value) {
@@ -1476,11 +1475,7 @@ export class ActionIcon extends HTMLElement {
    */
   #updateFocusable(noFocus) {
     if (noFocus) this.icon.toggleAttribute('tabindex', false)
-    else if (
-      !this.hasAttribute('readonly') &&
-      !this.hasAttribute('disabled') &&
-      !this.hasAttribute('tabindex')
-    ) {
+    else if (!this.hasAttribute('readonly') && !this.hasAttribute('disabled') && !this.hasAttribute('tabindex')) {
       this.icon.setAttribute('tabindex', 0)
     }
   }
@@ -1551,9 +1546,7 @@ export class MatFormElement extends HTMLElement {
     })
 
     // Append elements
-    this.shadowRoot.appendChild(
-      createStyleElement(theme, iconStyle, matFormElementStyle, ...styles)
-    )
+    this.shadowRoot.appendChild(createStyleElement(theme, iconStyle, matFormElementStyle, ...styles))
     this.shadowRoot.appendChild(this.wrapper)
   }
 
@@ -1686,8 +1679,7 @@ export class TextInput extends BaseTextInput {
   }
 
   #emailValidation() {
-    if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(this.input.value))
-      this.setAttribute('error', 'Email invalide')
+    if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(this.input.value)) this.setAttribute('error', 'Email invalide')
     else this.toggleAttribute('error', false)
   }
 
@@ -1969,9 +1961,7 @@ export class DataListInput extends ListMixin(BaseTextInput) {
 
   /** @inheritdoc */
   focusNext() {
-    let nextFocused = this.focusedElement
-      ? this.focusedElement.nextElementSibling
-      : this.listWrapper.firstElementChild
+    let nextFocused = this.focusedElement ? this.focusedElement.nextElementSibling : this.listWrapper.firstElementChild
 
     while (nextFocused && !nextFocused.hasAttribute('show')) {
       nextFocused = nextFocused.nextElementSibling
@@ -2002,18 +1992,9 @@ export class DataListInput extends ListMixin(BaseTextInput) {
 
     // Scrolling
     let twoOffsetHeight = 2 * this.focusedElement.offsetHeight
-    if (
-      this.focusedElement.offsetTop + twoOffsetHeight >
-      this.listWrapper.offsetHeight + this.listWrapper.scrollTop
-    ) {
-      this.listWrapper.scroll(
-        0,
-        this.focusedElement.offsetTop - this.listWrapper.offsetHeight + twoOffsetHeight
-      )
-    } else if (
-      this.focusedElement.offsetTop - this.focusedElement.offsetHeight <
-      this.listWrapper.scrollTop
-    ) {
+    if (this.focusedElement.offsetTop + twoOffsetHeight > this.listWrapper.offsetHeight + this.listWrapper.scrollTop) {
+      this.listWrapper.scroll(0, this.focusedElement.offsetTop - this.listWrapper.offsetHeight + twoOffsetHeight)
+    } else if (this.focusedElement.offsetTop - this.focusedElement.offsetHeight < this.listWrapper.scrollTop) {
       this.listWrapper.scroll(0, this.focusedElement.offsetTop - this.focusedElement.offsetHeight)
     }
     return this.focusedElement
@@ -2599,10 +2580,9 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
   }
 
   syncEditorInteractivity() {
-    if (!this.editor || !this.editorReady) 
-      { 
-        return 
-      }
+    if (!this.editor || !this.editorReady) {
+      return
+    }
 
     const readOnly = this.hasAttribute('readonly') || this.hasAttribute('disabled')
 
@@ -2808,11 +2788,8 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
     if (this._ckStylesLoaded) {
       return
     }
-    
-    const cssFiles = [
-      './dependencies/ckeditor5/ckeditor5.css',
-      './dependencies/ckeditor5/ckeditor5-editor.css',
-    ]
+
+    const cssFiles = ['./dependencies/ckeditor5/ckeditor5.css', './dependencies/ckeditor5/ckeditor5-editor.css']
 
     for (const cssFile of cssFiles) {
       try {
@@ -2824,7 +2801,10 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
         style.textContent = cssText
         this.shadowRoot.appendChild(style)
 
-        const fileName = cssFile.split('/').pop()?.replace(/[^a-z0-9_-]/gi, '_')
+        const fileName = cssFile
+          .split('/')
+          .pop()
+          ?.replace(/[^a-z0-9_-]/gi, '_')
         const globalStyleId = `ck-editor-global-${fileName}`
         if (!document.getElementById(globalStyleId)) {
           const globalStyle = document.createElement('style')
@@ -2950,7 +2930,6 @@ export class MultiRichTextArea extends ActionMixin(BaseInput) {
           `
         // Ensure this style wins the cascade by being last in <head>
         document.head.appendChild(toolbarStyle)
-
       } catch (error) {
         console.warn(`Impossible de charger ${cssFile}:`, error)
       }
@@ -3083,19 +3062,14 @@ export class FileCard extends ActionCard {
   set value(file) {
     if (file instanceof ForeignFile) this.toggleAttribute('cornered', true)
     else if (!(file instanceof File))
-      throw new SetValueError(
-        this,
-        file,
-        new TypeError('Value should be a File or ForeignFile instance')
-      )
+      throw new SetValueError(this, file, new TypeError('Value should be a File or ForeignFile instance'))
     console.debug('T [MatIn.FileCard]', 'file.size', file.size)
     this.#value = file
     this.name.textContent = file?.name
     this.type.textContent = file?.type
     if (file.size) {
       this.size.textContent = this.humanReadableByteCountSI(file.size)
-      if (file.file_storage_status === 'missing')
-        this.size.innerHTML = "<span class='alert'>indisponible</span>"
+      if (file.file_storage_status === 'missing') this.size.innerHTML = "<span class='alert'>indisponible</span>"
     } else {
       this.size.innerHTML = "<span class='alert'>0 Ko!!!</span>"
     }
@@ -3269,8 +3243,7 @@ export class MapInput extends BaseInput {
 
     this.map = L.map(this.map, { scrollWheelZoom: false })
     L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="http://osm.org/copyright" tabindex="-1">OpenStreetMap</a> contributors',
+      attribution: '&copy; <a href="http://osm.org/copyright" tabindex="-1">OpenStreetMap</a> contributors',
     }).addTo(this.map)
 
     // Initialise the FeatureGroup to store editable layers
@@ -3457,10 +3430,7 @@ export class MapInput extends BaseInput {
     })
 
     // Remove tabindex on a element
-    this.map._controlContainer.lastElementChild.lastElementChild.firstElementChild.setAttribute(
-      'tabindex',
-      -1
-    )
+    this.map._controlContainer.lastElementChild.lastElementChild.firstElementChild.setAttribute('tabindex', -1)
     this.fullScreenBtn.setAttribute('tabindex', -1)
     let control = this.map._controlContainer.firstElementChild.children[0].children
     for (let c of control) c.setAttribute('tabindex', -1)

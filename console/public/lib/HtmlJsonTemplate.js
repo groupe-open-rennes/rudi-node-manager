@@ -165,11 +165,11 @@ function buildElement(template, controller, fragmentSet) {
         let func = element[func_name]
         if (func) {
           func.apply(element, args)
-        // Fallback to avoid a crash when a web component is used in the JSON template
-        // but its JavaScript hasn’t finished loading yet.
-        // Once the definition is loaded, it retries the method call.
-        // This is a lazy initialization mechanism — custom elements are often defined asynchronously,
-        // and the DOM element can exist before its class is upgraded.
+          // Fallback to avoid a crash when a web component is used in the JSON template
+          // but its JavaScript hasn’t finished loading yet.
+          // Once the definition is loaded, it retries the method call.
+          // This is a lazy initialization mechanism — custom elements are often defined asynchronously,
+          // and the DOM element can exist before its class is upgraded.
         } else if (template.tag && template.tag.includes('-') && customElements?.whenDefined) {
           customElements.whenDefined(template.tag).then(() => {
             let lateFunc = element[func_name]

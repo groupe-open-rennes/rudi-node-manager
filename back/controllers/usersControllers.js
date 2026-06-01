@@ -166,6 +166,7 @@ export async function createUser(req, reply) {
 }
 
 export async function editUser(req, reply, next) {
+  const fun = 'editUser'
   try {
     const { id, email, roles } = req.body
     let username = req.body.username

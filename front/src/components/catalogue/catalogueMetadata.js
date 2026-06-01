@@ -30,29 +30,44 @@ CatalogueMetadata.propTypes = {
 export default function CatalogueMetadata({ editMode, logout }) {
   const { defaultErrorHandler } = useDefaultErrorHandler()
 
+  //----- Get global conf
   const { backConf } = useContext(BackConfContext)
   const [back, setBack] = useState(backConf)
   useEffect(() => setBack(backConf), [backConf])
 
-  // console.log('-- Catalogue')
+  //----- Users' editing rights
   const [isEdit, setIsEdit] = useState(!!editMode)
   useEffect(() => setIsEdit(!!editMode), [editMode])
 
+  //----- Refresh when back from console
+  const [isTabVisible, setIsTabVisible] = useState(true)
+  useEffect(() => {
+    const handler = () => setIsTabVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
+  useEffect(() => {
+    if (isTabVisible) refresh()
+  }, [isTabVisible])
+
+  //----- Get data
   const [metadataList, setMetadataList] = useState([])
   const [allCountByFilters, setAllCountByFilters] = useState([])
+
   const [currentFilters, setCurrentFilters] = useState([{ sort_by: `-updatedAt` }])
   useEffect(() => {
     refresh()
-  }, [back, currentFilters])
+  }, [backConf, currentFilters])
 
   const [hasMore, setHasMore] = useState(true)
-  const [currentOffset, setCurrentOffset] = useState(-1)
+  const [currentOffset, setCurrentOffset] = useState(0)
   const [isExtSearch, setIsExtSearch] = useState(false)
 
   const initialRender = useRef(true)
 
   const searchText = useRef(null)
 
+  //----- Helpers
   const deleteUrl = (id) => back?.isLoaded && back.getBackCatalog('resources', id)
   const deleteConfirmMsg = (id) => `Confirmez vous la suppression de la métadonnée ${id}?`
   const deleteMsg = (data) => `La métadonnée ${data.resource_title} a été supprimée`
@@ -66,43 +81,24 @@ export default function CatalogueMetadata({ editMode, logout }) {
   const themeDisplay = (filterValue, filter) => (
     <ThemeDisplay value={getFilterLabel(filterValue, filter)}></ThemeDisplay>
   )
-  const refresh = () => {
-    setHasMore(true)
+
+  const refresh = (onDelete = false) => {
+    if (!back?.isLoaded) return // Don't reset UI if we can't fetch yet
+    setAllCountByFilters([]) // Clear old counts immediately
     setMetadataList([])
-    getInitialData()
-    // console.log('-- gotInitialData')
-
-    if (currentOffset === 0) {
-      setCurrentOffset(-1)
-    } else {
-      setCurrentOffset(0)
-    }
+    setHasMore(true)
+    refreshCounts().then(() => loadPage(0))
   }
-
   useEffect(() => {
-    if (initialRender.current) initialRender.current = false
-    else if (currentOffset < 0) setCurrentOffset(0)
-    else fetchMoreData()
-  }, [currentOffset])
-
-  const [isTabVisible, setIsTabVisible] = useState(true)
-  useEffect(() => {
-    const handler = () => setIsTabVisible(document.visibilityState === 'visible')
-    document.addEventListener('visibilitychange', handler)
-    return () => document.removeEventListener('visibilitychange', handler)
-  }, [])
-  useEffect(() => {
-    if (isTabVisible) refresh()
-  }, [isTabVisible])
+    if (back?.isLoaded) refresh()
+  }, [back?.isLoaded])
 
   const filterConf = [
     {
       name: 'metadata_status',
       text: 'Statut :',
       values: [],
-      toFilterParam: (elem) => {
-        return { metadata_status: `"${elem?.metadata_status}"` }
-      },
+      toFilterParam: (elem) => ({ metadata_status: `"${elem?.metadata_status}"` }),
       display: metadataDisplay,
     },
     {
@@ -244,7 +240,7 @@ export default function CatalogueMetadata({ editMode, logout }) {
   /**
    * recup la 1er page des métadonnéees et les countBy
    */
-  const getInitialData = () =>
+  const refreshCounts = () =>
     back?.isLoaded &&
     Promise.all(
       filterConf.map((count) =>
@@ -259,22 +255,24 @@ export default function CatalogueMetadata({ editMode, logout }) {
           return filter
         })
         setAllCountByFilters(updatedFilter)
+        return updatedFilter
       })
       .catch((err) => (err.response?.status == 401 ? logout() : defaultErrorHandler(err)))
 
   /**
    * récupere la page suivante
    */
-  function fetchMoreData() {
+  function loadPage(offset) {
     back?.isLoaded &&
       axios
         .get(back.getBackCatalog(`resources${searchMode()}`), {
-          params: createParams({ limit: PAGE_SIZE, offset: currentOffset }),
+          params: createParams({ limit: PAGE_SIZE, offset }),
         })
         .then((res) => {
           const data = isSearchMode() ? res.data.items : res.data
           if (data.length < PAGE_SIZE) setHasMore(false)
-          setMetadataList((metadatas) => metadatas.concat(data))
+          setMetadataList((prev) => (offset === 0 ? data : prev.concat(data)))
+          setCurrentOffset(offset + PAGE_SIZE)
         })
         .catch((err) => (err.response?.status == 401 ? logout() : defaultErrorHandler(err)))
   }
@@ -308,6 +306,40 @@ export default function CatalogueMetadata({ editMode, logout }) {
     refresh()
   }
   const toggleExtSearch = () => setIsExtSearch(!isExtSearch)
+  const getLeftTabCounts = (allCountByFilters) =>
+    allCountByFilters?.map((filterObject, i) => {
+      // console.trace(filterObject)
+      // console.trace(filterObject?.values)
+      return !filterObject?.values ? (
+        'No values'
+      ) : (
+        <div className={i ? 'col border rounded' : 'border rounded'} key={filterObject.name}>
+          <div className="label-lv2">{filterObject.text}</div>
+          <ul className="list-group">
+            {(filterObject.values?.items ?? filterObject.values)?.map((filterValue, i) => {
+              const filterLabel = getFilterLabel(filterValue, filterObject)
+              const key = filterLabel + i
+              return (
+                <li
+                  className="filter-items"
+                  key={key}
+                  onClick={() => addToFilter(filterObject.toFilterParam(filterValue))}
+                >
+                  {filterObject.display ? filterObject.display(filterValue, filterObject) : filterLabel}
+                  <span
+                    className={`badge rounded-pill text-bg-${
+                      isSelectedFilter(filterObject.toFilterParam(filterValue)) ? 'success' : 'primary'
+                    }`}
+                  >
+                    {filterValue.count}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )
+    })
 
   // TODO :  sticky-top ?
   return (
@@ -395,41 +427,7 @@ export default function CatalogueMetadata({ editMode, logout }) {
               </div>
               <div className="left-hand-blocks">
                 <div className="label-lv1">Filtrer</div>
-                <div className="row no-row-margin">
-                  {allCountByFilters.map((filterObject, i) => {
-                    // console.trace(filterObject)
-                    // console.trace(filterObject?.values)
-                    return !filterObject?.values ? (
-                      'No values'
-                    ) : (
-                      <div className={i ? 'col border rounded' : 'border rounded'} key={filterObject.name}>
-                        <div className="label-lv2">{filterObject.text}</div>
-                        <ul className="list-group">
-                          {(filterObject.values?.items ?? filterObject.values)?.map((filterValue, i) => {
-                            const filterLabel = getFilterLabel(filterValue, filterObject)
-                            const key = filterLabel + i
-                            return (
-                              <li
-                                className="filter-items"
-                                key={key}
-                                onClick={() => addToFilter(filterObject.toFilterParam(filterValue))}
-                              >
-                                {filterObject.display ? filterObject.display(filterValue, filterObject) : filterLabel}
-                                <span
-                                  className={`badge rounded-pill text-bg-${
-                                    isSelectedFilter(filterObject.toFilterParam(filterValue)) ? 'success' : 'primary'
-                                  }`}
-                                >
-                                  {filterValue.count}
-                                </span>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      </div>
-                    )
-                  })}
-                </div>
+                <div className="row no-row-margin">{getLeftTabCounts(allCountByFilters)}</div>
               </div>
             </div>
           </div>
@@ -444,12 +442,12 @@ export default function CatalogueMetadata({ editMode, logout }) {
                   deleteMsg={deleteMsg}
                   btnTextAdd={btnTextAdd}
                   btnTextChg={btnTextChg}
-                  refresh={refresh}
+                  refresh={() => refresh(true)}
                 ></EditObjCard>
               )}
               <InfiniteScroll
                 dataLength={metadataList.length}
-                next={() => setCurrentOffset(currentOffset + PAGE_SIZE)}
+                next={() => loadPage(currentOffset)}
                 hasMore={hasMore}
                 loader={<h4>Loading...</h4>}
                 endMessage={<i>Aucune donnée supplémentaire</i>}
@@ -458,7 +456,7 @@ export default function CatalogueMetadata({ editMode, logout }) {
                   <MetadataCard
                     editMode={isEdit}
                     metadata={metadata}
-                    refresh={refresh}
+                    refresh={() => refresh(true)}
                     key={metadata.global_id}
                   ></MetadataCard>
                 ))}

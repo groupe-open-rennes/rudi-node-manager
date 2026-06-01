@@ -29,16 +29,10 @@ export class MetadataForm extends RudiForm {
   async getTemplate() {
     const here = 'getTemplate'
     try {
-      if (!this.initialized) {
-        throw new Error('Init function should be called first')
-      }
+      if (!this.initialized) throw new Error('Init function should be called first')
       this.template = await this.getLocal('templates/metadata.json')
-      if (!this.template) {
-        throw new Error('Could not load template')
-      }
-      if (!this.template.fragmentSet) {
-        throw new Error('Could not load template.fragmentSet')
-      }
+      if (!this.template) throw new Error('Could not load template')
+      if (!this.template.fragmentSet) throw new Error('Could not load template.fragmentSet')
 
       // this.ok(here, JSON.stringify(this.template))
       // Fetch template and enums to create form
@@ -47,19 +41,24 @@ export class MetadataForm extends RudiForm {
         data = await Promise.all([
           this.getPmJson('catalog/enum?lang=fr'),
           this.getPmJson('catalog/contacts'),
-          this.getPmJson('catalog/organizations?linked_producer_status=VALIDATED&organization_status=VALIDATED'),
+          this.getPmJson('catalog/organizations'),
           this.getPmJson('catalog/pub_keys?type=rsa'),
+          this.getPmStr('front/portal-url'),
         ])
       } catch (err) {
         this.ko(here, err)
         return this.fail('get_api_data')
       }
-      const [enums, contacts, organizations, publicKeys] = data
-      // this.ok(here, 'retrieved org:', organizations[0])
+      const [enums, contacts, organizations, publicKeys, portalUrl] = data
+      const portalConnected = `${portalUrl}`.startsWith('http')
 
       // Build final enum
       enums.contacts = contacts.map((c) => ({ name: c.contact_name, value: c }))
-      enums.organizations = organizations.map((o) => ({ name: o.organization_name, value: o }))
+
+      enums.organizations = organizations
+        // .filter((o) => !portalConnected || o.linked_producer_status === 'VALIDATED')
+        .map((o) => ({ name: o.organization_name, value: o }))
+
       enums.publickeys = publicKeys.map((k) => {
         pubKeys[k.name] = k.pem
         return k.name
@@ -70,9 +69,7 @@ export class MetadataForm extends RudiForm {
       enums.keywords.sort(new Intl.Collator().compare)
       enums.publickeys.sort(new Intl.Collator().compare)
 
-      if (!this.template?.fragmentSet?.enums) {
-        throw new Error('Template was not successfully loaded')
-      }
+      if (!this.template?.fragmentSet?.enums) throw new Error('Template was not successfully loaded')
       if (!this.template.fragmentSet.enums.$) this.template.fragmentSet.enums.$ = {}
       Object.assign(this.template.fragmentSet.enums.$, enums)
 
@@ -142,7 +139,7 @@ export class MetadataForm extends RudiForm {
     const outputValue = { ...formValue }
 
     let hasLocalFile = false
-    if (formValue.available_formats) {
+    if (formValue?.available_formats) {
       const mediaFiles =
         formValue.available_formats.files?.map((file) => {
           if (file instanceof MediaFile) {
@@ -158,13 +155,12 @@ export class MetadataForm extends RudiForm {
         formValue.available_formats.services?.map((service) => MediaService.fromService(service)) ?? []
 
       const af = mediaFiles.concat(mediaServices)
-      if (!outputValue.available_formats) outputValue.available_formats = []
       outputValue.available_formats = af.length ? af : undefined
 
       if (originalValue?.available_formats) {
         // Conserve other type of media from original value
         for (const media of originalValue.available_formats) {
-          if (media.media_type !== 'FILE' && media.media_type !== 'SERVICE') {
+          if (media.media_type != 'FILE' && media.media_type != 'SERVICE') {
             outputValue.available_formats.push(media)
           }
         }
@@ -172,11 +168,8 @@ export class MetadataForm extends RudiForm {
     } else {
       this.ok(here, 'No available_formats found')
     }
-
     // Set restricted_access bool value
-    if (!outputValue.access_condition.confidentiality) {
-      outputValue.access_condition.confidentiality = {}
-    }
+    if (!outputValue.access_condition.confidentiality) outputValue.access_condition.confidentiality = {}
     outputValue.access_condition.confidentiality.restricted_access = Boolean(
       (outputValue.restricted_access && hasLocalFile) ||
       originalValue?.access_condition?.confidentiality?.restricted_access
@@ -185,6 +178,8 @@ export class MetadataForm extends RudiForm {
     // REMOVE OR API FAIL WHEN PUBLISHING NEW RESTRICTED DATA
     outputValue.restricted_access = undefined
     outputValue.keywords = multiSplit(formValue.keywords, [',', ';'], true)
+
+    if (!outputValue?.available_formats) outputValue.available_formats = []
 
     return outputValue
   }
@@ -252,9 +247,7 @@ export class MetadataForm extends RudiForm {
     try {
       const mediaInfo = JSON.parse(JSON.stringify(mediaFile))
       mediaInfo.media_name = encodeURI(mediaFile.media_name)
-      const postMediaOpts = await this.getStorageHeaders({
-        'File-Metadata': JSON.stringify(mediaInfo),
-      })
+      const postMediaOpts = await this.getStorageHeaders({ 'File-Metadata': JSON.stringify(mediaInfo) })
       if (!postMediaOpts) return
 
       const mediaId = mediaFile.media_id
@@ -333,12 +326,12 @@ export class MetadataForm extends RudiForm {
       let errMsgDetected = []
       for (const fileRes of storageResponse) {
         const fileResParsed = safeJsonParse(fileRes)
-        if (fileResParsed?.length > 0 && fileResParsed[fileResParsed.length - 1]?.status === 'error') {
+        if (fileResParsed?.length > 0 && fileResParsed[fileResParsed.length - 1]?.status == 'error') {
           const errMsg = `File not sent: ${fileResParsed[fileResParsed.length - 1]?.msg}`
           errMsgDetected.push(errMsg)
         }
       }
-      if (errMsgDetected.length === 0) {
+      if (errMsgDetected.length == 0) {
         if (this.isDev) this.ok(here, 'every media was sent', storageResponse)
         return this.end(this.isUpdate ? 'edit' : 'create')
       } else {
@@ -398,7 +391,7 @@ export class MetadataForm extends RudiForm {
         )
       }
       for (const statusInfo of resultArray) {
-        if (statusInfo.status === MEDIA_COMMIT_OK) {
+        if (statusInfo.status == MEDIA_COMMIT_OK) {
           Object.assign(commitInfo, statusInfo)
           break
         }
@@ -446,7 +439,7 @@ export class MetadataForm extends RudiForm {
     const here = 'loadForm'
     const metadataForm = new MetadataForm('fr')
     await metadataForm.init()
-    if (metadataForm.state === 'fail' || metadataForm.state === 'critic') return
+    if (metadataForm.state == 'fail' || metadataForm.state == 'critic') return
     try {
       await metadataForm.getTemplate()
       metadataForm.ok(here, 'getTemplate')
@@ -499,18 +492,6 @@ const safeJsonParse = (str) => {
 }
 
 /* ---- FILES ---- */
-function normalyseType(type = 'application/octet-stream') {
-  if (type === 'application/x-yaml') return 'text/x-yaml'
-  if (type === 'text/x-markdown') return 'text/markdown'
-  return [
-    'application/zip-compressed',
-    'application/x-zip-compressed',
-    'application/x-zip',
-    'multipart/x-zip',
-  ].includes(type)
-    ? 'application/zip'
-    : type
-}
 /** The object representing files for rudi resources */
 class MediaFile extends ForeignFile {
   constructor( // NOSONAR
@@ -761,7 +742,6 @@ class MediaService {
 //     {
 //       lang: 'fr',
 //       text: 'Test de donnée description',
-//       html: '<strong>Test de donnée description html</strong>'
 //       autre: 'test'
 //     }
 //   ],

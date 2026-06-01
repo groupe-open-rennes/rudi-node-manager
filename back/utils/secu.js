@@ -7,7 +7,7 @@ import { forgeToken, readPrivateKeyFile, readPublicKeyPem, tokenStringToJwtObjec
 import axios from 'axios'
 import { existsSync, readdirSync, readFileSync } from 'fs'
 import _jwt from 'jsonwebtoken'
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuid4 } from 'uuid'
 const { sign } = _jwt
 
 // -------------------------------------------------------------------------------------------------
@@ -37,6 +37,9 @@ import { cleanErrMsg, pathJoin, timeEpochS, toInt } from './utils.js'
 // -------------------------------------------------------------------------------------------------
 const REGEX_JWT = /^[\w-]+\.[\w-]+\.([\w-]+={0,3})$/
 
+const USERNAME_MAXLEN = 60
+const USERNAME_REGEX = /^[a-zA-Z][\w \-]{2,58}\w$/
+
 const OFFSET_USR_ID = 5000
 const DEFAULT_EXP = getConf('auth', 'exp_time_s', 600)
 
@@ -59,7 +62,7 @@ export function isInvalidUsername(username) {
   const fun = 'isInvalidUsername'
   try {
     if (!username || `${username}`.length > 60) return true
-    const isValid = /^[a-zA-Z_ \-]{4,60}$/.test(username)
+    const isValid = USERNAME_REGEX.test(username)
     logI(mod, fun, `User "${username}" is valid: ${isValid}`)
     return !isValid
   } catch (err) {
@@ -100,10 +103,10 @@ export const getFrontCookieOpts = (exp, overwrite) => ({
   overwrite,
 })
 
-const JWT_SECRET = isDevEnv() ? '40811b16-5d91-44dc-95c8-d6c18bd25122' : `${uuidv4()}${uuidv4()}`
+const JWT_SECRET = isDevEnv() ? '40811b16-5d91-44dc-95c8-d6c18bd25122' : `${uuid4()}${uuid4()}`
 export const jwtSecretKey = () => JWT_SECRET
 
-const INIT_PWD_SECRET = isDevEnv() ? '40811b16-5d91-44dc-95c8-d6c18bd25122' : `${uuidv4()}${uuidv4()}`
+const INIT_PWD_SECRET = isDevEnv() ? '40811b16-5d91-44dc-95c8-d6c18bd25122' : `${uuid4()}${uuid4()}`
 export const initPwdSecret = () => INIT_PWD_SECRET
 
 export function createFrontUserTokens(userInfo) {
@@ -249,7 +252,7 @@ export function getStorageJwt() {
       getPrvKey('storage'),
       {},
       {
-        jti: uuidv4(),
+        jti: uuid4(),
         iat: timeEpochS(),
         exp: timeEpochS(toInt(DEFAULT_EXP)),
         sub: 'auth',

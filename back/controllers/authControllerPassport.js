@@ -16,7 +16,7 @@ import {
   dbUpdatePasswordWithField,
 } from '../database/database.js'
 import { BadRequestError, RudiError, UnauthorizedError } from '../utils/errors.js'
-import { logE, logW } from '../utils/logger.js'
+import { logE, logI, logW } from '../utils/logger.js'
 import { passportAuthenticate } from '../utils/passportSetup.js'
 import { ERR_401_MSG, initPwdSecret, isInvalidUsername, login, logout } from '../utils/secu.js'
 import { decodeBase64, decodeBase64url, toBase64 } from '../utils/utils.js'
@@ -45,6 +45,7 @@ export async function postLogin(req, reply, next) {
       logW(mod, fun, errMsg)
       return reply.status(400).json(new BadRequestError(errMsg))
     }
+
     try {
       await login(req, reply, user)
     } catch (er) {
@@ -155,13 +156,15 @@ export async function resetPassword(req, reply, next) {
  * @returns if usr was defined: a base64 encoded string with colon-separated <username>:<hashed password>. Otherwise : the hashed password (not encoded)
  */
 export function hashCredentials(pwd, usr, encoding) {
+  const fun = 'hashCredentials'
   if (!pwd) throw new BadRequestError('Input password should be defined')
   if (isInvalidUsername(usr)) {
     const errMsg = `Le nom d'utilisateur doit comporter au minimum 4 lettres, et être composé de lettres, espace, signe moins ou underscore`
     logW(mod, fun, errMsg)
     throw new BadRequestError(errMsg)
   }
-
+  logI(mod, fun, `encoding: ${encoding}`)
+  logI(mod, fun, `encoding: ${encoding == undefined}`)
   let decode
   switch (encoding?.toLowerCase()) {
     case 'base64':

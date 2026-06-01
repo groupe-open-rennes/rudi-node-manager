@@ -5,12 +5,12 @@ import { useContext, useEffect, useRef, useState } from 'react'
 import InfiniteScroll from 'react-infinite-scroll-component'
 
 import { BackConfContext } from '../../context/backConfContext.js'
-import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler'
-import { ReportsCard } from './reportsCard'
+import useDefaultErrorHandler from '../../utils/useDefaultErrorHandler.js'
+import { ReportsCard } from './reportsCard.js'
 
 const PAGE_SIZE = 20
 
-CatalogueReports.propTypes = {
+CatalogLogs.propTypes = {
   editMode: PropTypes.bool,
   shouldPad: PropTypes.bool,
   shouldRefresh: PropTypes.bool,
@@ -31,9 +31,8 @@ CatalogueReports.propTypes = {
  * Composant : CatalogueContact
  * @return {void}
  */
-export default function CatalogueReports({
+export default function CatalogLogs({
   editMode,
-  shouldPad = true,
   shouldRefresh,
   logout,
   hideEdit,
