@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@aqmo.org/jwt-lib": "^1.1.15",
-    "@aqmo.org/rudi_logger": "^1.1.6",
+    "@aqmo.org/rudi_logger": "^1.1.7",
     "axios": "^1.16.1",
     "body-parser": "^2.2.2",
     "cookie-parser": "^1.4.7",
