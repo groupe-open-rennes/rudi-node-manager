@@ -48,7 +48,7 @@ catalogApi.get(`/logs`, getCatalogLogs)
 
 catalogApi.get('/portal/test', testPortalConnection)
 
-catalogApi.post(`/portal/organizations/:id/:act`, getPortalOrg)
+catalogApi.get(`/portal/organizations/:id/:act`, getPortalOrg)
 catalogApi.get(`/portal/organizations/:id`, getPortalOrg)
 catalogApi.get(`/portal/organizations`, getPortalOrg)
 

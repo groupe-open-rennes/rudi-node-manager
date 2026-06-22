@@ -114,7 +114,7 @@ export function ProducerCard({ editMode, producer, deleteUrl, refresh, attachUrl
     setAttachLoading(true)
     setShowAttachButton(false)
     axios
-      .post(attachUrl(id))
+      .get(attachUrl(id))
       .then(() => {
         setAttachLoading(false)
         notifySuccess('Tâche effectuée avec succès. Votre demande de rattachement est soumise à modération auprès des équipes Rudi.')
@@ -139,7 +139,7 @@ export function ProducerCard({ editMode, producer, deleteUrl, refresh, attachUrl
 
   const detachProducer = (id) => {
     axios
-      .post(detachOrgUrl(id))
+      .get(detachOrgUrl(id))
       .then(() => {
         setHasPendingTask(true)
         notifySuccess("Votre demande a bien été soumise à l'équipe administrative du portail.")
@@ -159,7 +159,7 @@ export function ProducerCard({ editMode, producer, deleteUrl, refresh, attachUrl
 
   const checkOrgHasTaskThenDetach = (id) => {
     axios
-      .post(hasTaskOrgUrl(id))
+      .get(hasTaskOrgUrl(id))
       .then((res) => {
         if (res.data) {
           notifyWarning('Une demande est déjà en cours pour cette organisation.')
