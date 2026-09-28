@@ -16,9 +16,9 @@ import {
   dbUpdatePasswordWithField,
 } from '../database/database.js'
 import { BadRequestError, RudiError, UnauthorizedError } from '../utils/errors.js'
-import { logE, logI, logW } from '../utils/logger.js'
+import { logD, logE, logI, logW } from '../utils/logger.js'
 import { passportAuthenticate } from '../utils/passportSetup.js'
-import { ERR_401_MSG, initPwdSecret, isInvalidUsername, login, logout } from '../utils/secu.js'
+import { ERR_401_MSG, initPwdSecret, isInvalidUsername, login, logout, USERNAME_RULE } from '../utils/secu.js'
 import { decodeBase64, decodeBase64url, toBase64 } from '../utils/utils.js'
 import { formatError } from './errorHandler.js'
 
@@ -44,9 +44,8 @@ export async function postLogin(req, reply, next) {
     }
 
     if (isInvalidUsername(user.username)) {
-      const errMsg = `Le nom d'utilisateur doit comporter au minimum 4 lettres, et être composé de lettres, espace, signe moins ou underscore`
-      logW(mod, fun, errMsg)
-      return reply.status(400).json(new BadRequestError(errMsg))
+      logW(mod, fun, USERNAME_RULE)
+      return reply.status(400).json(new BadRequestError(USERNAME_RULE))
     }
 
     try {
@@ -67,9 +66,8 @@ export async function postRegister(req, reply) {
     if (!password || password !== confirmPassword)
       throw new BadRequestError('Password and its confirmation should not be null and be the same.')
     if (isInvalidUsername(username)) {
-      const errMsg = `Le nom d'utilisateur doit comporter au minimum 4 lettres, et être composé de lettres, espace, signe moins ou underscore`
-      logW(mod, fun, errMsg)
-      return reply.status(400).json(new BadRequestError(errMsg))
+      logW(mod, fun, USERNAME_RULE)
+      return reply.status(400).json(new BadRequestError(USERNAME_RULE))
     }
     const user = await dbRegisterUser(null, { username, email, password })
     reply.status(200).send(user)
@@ -97,8 +95,10 @@ const INIT_PWD = initPwdSecret()
 
 export async function putPassword(req, reply, next) {
   const fun = 'changePwd'
+  logD(fun)
   try {
     const { username, password, newPassword, confirmNewPassword } = req.body
+    logD(mod, fun, `changing pwd for user '${username}': '${password}'->'${newPassword}'/'${confirmNewPassword}'`)
     if (
       isInvalidUsername(username) ||
       !password ||
@@ -113,20 +113,25 @@ export async function putPassword(req, reply, next) {
     const db = dbOpen()
     const dbUserInfo = await dbGetHashedPassword(db, username)
     const dbUserHash = dbUserInfo?.password
-
-    passportAuthenticate('local', (err, user, info) => {
-      if (err) return reply.status(400).send(err)
-      if (!user && !matchPassword(INIT_PWD, dbUserHash)) {
-        const errMsg = info.message ?? 'User not found'
-        logW(mod, fun, errMsg)
-        return reply.status(401).send(ERR_401_MSG)
-      }
-      return dbHashAndUpdatePassword(db, username, newPassword)
-        .then((userInfo) => reply.json(userInfo))
+    const updatePwd = (db, username, newPassword) =>
+      dbHashAndUpdatePassword(db, username, newPassword)
+        .then(() => reply.json({ username }))
         .catch((err) => {
           logE(mod, fun, err)
           reply.status(400).send(err.message)
         })
+    logD(mod, fun, `matches init: ${matchPassword(INIT_PWD, dbUserHash)}`)
+    if (matchPassword(INIT_PWD, dbUserHash)) return updatePwd(db, username, newPassword)
+
+    passportAuthenticate('local', (err, user, info) => {
+      logD(mod, fun, `err:\n${err}\n\nuser:\n${user}\n\ninfo: ${info}`)
+      if (err) return reply.status(400).send(err)
+      if (!user) {
+        const errMsg = info.message ?? 'User not found'
+        logW(mod, fun, errMsg)
+        return reply.status(401).send(ERR_401_MSG)
+      }
+      return updatePwd(db, username, newPassword)
     })(req, reply, next)
   } catch (err) {
     logE(mod, fun, err)
@@ -162,9 +167,8 @@ export function hashCredentials(pwd, usr, encoding) {
   const fun = 'hashCredentials'
   if (!pwd) throw new BadRequestError('Input password should be defined')
   if (isInvalidUsername(usr)) {
-    const errMsg = `Le nom d'utilisateur doit comporter au minimum 4 lettres, et être composé de lettres, espace, signe moins ou underscore`
-    logW(mod, fun, errMsg)
-    throw new BadRequestError(errMsg)
+    logW(mod, fun, USERNAME_RULE)
+    throw new BadRequestError(USERNAME_RULE)
   }
   logI(mod, fun, `encoding: ${encoding}`)
   logI(mod, fun, `encoding: ${encoding == undefined}`)

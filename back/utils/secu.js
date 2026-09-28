@@ -38,7 +38,9 @@ import { cleanErrMsg, pathJoin, timeEpochS, toInt } from './utils.js'
 const REGEX_JWT = /^[\w-]+\.[\w-]+\.([\w-]+={0,3})$/
 
 const USERNAME_MAXLEN = 60
-const USERNAME_REGEX = /^[a-zA-Z][\w \-]{2,58}\w$/
+const USERNAME_REGEX = /^[a-zA-Z][\w @\.\-]{2,58}\w$/
+export const USERNAME_RULE =
+  "Le nom d'utilisateur doit comporter au minimum 4 lettres, et être composé de lettres, espace, signe moins, point, arobase ou underscore"
 
 const OFFSET_USR_ID = 5000
 const DEFAULT_EXP = getConf('auth', 'exp_time_s', 600)
@@ -61,7 +63,7 @@ function isJwtValid(jwt) {
 export function isInvalidUsername(username) {
   const fun = 'isInvalidUsername'
   try {
-    if (!username || `${username}`.length > 60) return true
+    if (!username || `${username}`.length > USERNAME_MAXLEN) return true
     const isValid = USERNAME_REGEX.test(username)
     logI(mod, fun, `User "${username}" is valid: ${isValid}`)
     return !isValid
@@ -152,9 +154,8 @@ export const login = async (req, reply, user) => {
   try {
     const username = user.username
     if (isInvalidUsername(username)) {
-      const errMsg = `Le nom d'utilisateur doit comporter au minimum 4 lettres, et être composé de lettres, espace, signe moins ou underscore`
-      logW(mod, fun, errMsg)
-      return reply.status(400).json(new BadRequestError(errMsg))
+      logW(mod, fun, USERNAME_RULE)
+      return reply.status(400).json(new BadRequestError(USERNAME_RULE))
     }
 
     const roles = await dbGetUserRolesByUsername(null, username) // NO SONAR
